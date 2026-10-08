@@ -202,6 +202,21 @@ def robots(p: pd.DataFrame) -> dict:
 
 
 # ============================================================ 3. historia de 20 años
+def peor_momento(ret: pd.Series) -> dict:
+    """Fechas de la peor caída (con datos diarios): desde el máximo previo hasta el fondo, y cuándo se recuperó."""
+    curva = (1 + ret).cumprod()
+    dd = curva / curva.cummax() - 1
+    if dd.min() >= 0:
+        return {}
+    fondo = dd.idxmin()
+    pico = curva.loc[:fondo].idxmax()
+    despues = curva.loc[fondo:]
+    rec = despues[despues >= curva.loc[pico]]
+    return {"caida_desde": pico.strftime("%Y-%m-%d"), "caida_hasta": fondo.strftime("%Y-%m-%d"),
+            "recupera": rec.index[0].strftime("%Y-%m-%d") if len(rec) else None}
+
+
+
 def historia(p: pd.DataFrame) -> dict:
     inicio = p.index[260]
     d = pd.Timestamp(DIVISION)
@@ -216,6 +231,7 @@ def historia(p: pd.DataFrame) -> dict:
             m = es.metricas(ret.loc[desde:hasta], pos.loc[desde:hasta], rot.loc[desde:hasta])
             fila[clave] = {"anual": r(m["Rent. anual"]), "caida": r(m["Peor caída"]),
                            "final": round(m["S/10k ->"]), "invertido": r(m["% invertido"])}
+            fila[clave].update(peor_momento(ret.loc[desde:hasta]))
         metricas.append(fila)
     for titulo, a, b in CRISIS:
         if pd.Timestamp(a) < inicio or pd.Timestamp(b) > p.index[-1]:
