@@ -1,6 +1,6 @@
 // Permite abrir la app sin internet mostrando los últimos datos guardados.
-const CACHE = "trading-v11";
-const BASE = ["./", "index.html", "manifest.json", "icono-192.png", "icono-512.png", "icono-maskable-512.png", "apple-touch-icon.png"];
+const CACHE = "trading-v12";
+const BASE = ["./", "index.html", "app-v2.webmanifest", "logo-v2-192.png", "logo-v2-512.png", "logo-v2-maskable-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting()));

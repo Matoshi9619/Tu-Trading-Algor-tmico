@@ -9,9 +9,9 @@
 <meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icono-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="app-v2.webmanifest">
+<link rel="icon" href="logo-v2-192.png">
+<link rel="apple-touch-icon" href="logo-v2-apple.png">
 <style>
 :root{
   --fondo:#F4F5F7; --tarjeta:#FFFFFF; --tinta:#101828; --suave:#5D6878; --borde:#E2E5EA;
@@ -257,13 +257,13 @@ const ICONOS = {
 };
 const icono = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n]}</svg>`;
 const barra = () => `<header class="appbar"><button class="atras" onclick="ir('')" aria-label="Volver al inicio">${icono("atras")} Volver</button>
-  <img src="icono-192.png" alt=""><span class="marca">Trading Algorítmico</span></header>`;
+  <img src="logo-v2-192.png" alt=""><span class="marca">Trading Algorítmico</span></header>`;
 const pie = () => `<footer>Práctica educativa con dinero ficticio. No es una recomendación de inversión.<br>Precios reales al cierre del ${fecha(D.fecha_precios)}.</footer>`;
 
 function inicio() {
   const m = D.mercado;
   return `
-  <header class="appbar"><img src="icono-192.png" alt=""><span class="marca">Trading Algorítmico<small>Datos del ${fecha(D.fecha_precios)}</small></span>
+  <header class="appbar"><img src="logo-v2-192.png" alt=""><span class="marca">Trading Algorítmico<small>Datos del ${fecha(D.fecha_precios)}</small></span>
     <button class="engranaje" onclick="ir('ajustes')" aria-label="Ajustes">${icono("ajustes")}</button></header>
   <div class="hero"><h1>Bienvenidos</h1><p>Aprendan a invertir con robots y precios reales de la bolsa de Nueva York, sin arriesgar dinero.</p></div>
   ${D.demo ? '<div class="aviso oro"><b>Datos de prueba.</b> Estos números son inventados. En unos minutos se reemplazan por precios reales.</div>' : ""}
