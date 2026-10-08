@@ -1,6 +1,6 @@
 {
   "name": "Trading Algorítmico",
-  "short_name": "Trading Algo",
+  "short_name": "Trading Algorítmico",
   "description": "Práctica familiar de trading algorítmico con robots y precios reales",
   "lang": "es",
   "start_url": "./?fuente=app",

@@ -1,5 +1,5 @@
 // Permite abrir la app sin internet mostrando los últimos datos guardados.
-const CACHE = "trading-v13";
+const CACHE = "trading-v14";
 const BASE = ["./", "index.html", "app-v2.webmanifest", "logo-v2-192.png", "logo-v2-512.png", "logo-v2-maskable-512.png"];
 
 self.addEventListener("install", e => {
