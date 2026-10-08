@@ -1,0 +1,40 @@
+name: Actualizar datos de la app
+
+on:
+  schedule:
+    # Lunes a viernes 22:30 UTC = 5:30 p.m. en Lima (después del cierre de Nueva York)
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch: {}   # botón "Run workflow" para actualizar a mano
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar librerías
+        run: pip install -r motor/requirements.txt
+
+      - name: Descargar precios y calcular
+        run: python motor/actualizar.py
+
+      - name: Guardar resultados
+        run: |
+          git config user.name "robot-inversion"
+          git config user.email "robot-inversion@users.noreply.github.com"
+          git add docs/data.json motor/estado_robots.json
+          git diff --cached --quiet || git commit -m "Datos del $(date -u +%Y-%m-%d)"
+          git push
