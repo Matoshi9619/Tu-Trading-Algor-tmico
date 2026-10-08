@@ -1,10 +1,10 @@
-name: Actualizar datos de la app
+name: Velas cada hora
 
 on:
   schedule:
-    # Lunes a viernes 22:30 UTC = 5:30 p.m. en Lima (después del cierre de Nueva York)
-    - cron: "30 22 * * 1-5"
-  workflow_dispatch: {}   # botón "Run workflow" para actualizar a mano
+    # Lunes a viernes, cada hora de 13:05 a 21:05 UTC (cubre el horario de la bolsa de Nueva York todo el año)
+    - cron: "5 13-21 * * 1-5"
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  actualizar:
+  velas:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -28,15 +28,15 @@ jobs:
       - name: Instalar librerías
         run: pip install -r motor/requirements.txt
 
-      - name: Descargar precios y calcular
-        run: python motor/actualizar.py
+      - name: Descargar velas
+        run: python motor/velas.py
 
       - name: Guardar resultados
         run: |
           git config user.name "robot-inversion"
           git config user.email "robot-inversion@users.noreply.github.com"
-          git add docs/data.json motor/estado_robots.json
+          git add docs/velas.json
           git diff --cached --quiet && exit 0
-          git commit -m "Datos del $(date -u +%Y-%m-%d)"
+          git commit -m "Velas $(date -u +%Y-%m-%dT%H:%MZ)"
           git pull --rebase origin main
           git push
