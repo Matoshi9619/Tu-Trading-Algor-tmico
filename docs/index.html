@@ -545,13 +545,46 @@ function copiarRobot(i, auto) {
   pintar(true);
 }
 function apagarAuto() { AUTO_AVISO = ""; const c = cuenta(); c.auto = false; guardar(c); simMsg = "Listo: el robot ya no maneja tu dinero. Ahora decides tú."; pintar(); }
+/* valor de un robot con los precios de esta hora (el robot no cambia de idea durante el día) */
+function robotAhora(r) {
+  const w = r.pesos || {}; let f = 1 - ORDEN.reduce((s, t) => s + (w[t] || 0), 0);
+  ORDEN.forEach(t => { if (w[t]) { const cierre = D.mercado.activos.find(a => a.ticker === t).precio; f += w[t] * ultimo(t).precio / cierre; } });
+  return r.valor * f;
+}
+function gananciaRobot(r, desde) {
+  const s = r.serie, k = s.findIndex(x => x[0] >= desde);
+  const base = k < 0 ? s[s.length - 1][1] : s[k][1];
+  return robotAhora(r) / base - 1;
+}
+let simSugerencia = "";
+function sugerir(criterio) {
+  const R = D.robots.robots, M = D.historia.metricas, c = cuenta();
+  let i, por;
+  if (criterio === "gano") {
+    i = M.reduce((a, m, k) => m.prueba.anual > M[a].prueba.anual ? k : a, 0);
+    por = `Desde 2018 fue el que más ganó: en promedio ${pct(M[i].prueba.anual)} al año. Pero en su peor momento llegó a caer ${pct(M[i].prueba.caida, 0)}.`;
+  } else if (criterio === "tranquilo") {
+    i = M.reduce((a, m, k) => Math.abs(m.prueba.caida) < Math.abs(M[a].prueba.caida) ? k : a, 0);
+    por = `Desde 2018 fue el que menos cayó (su peor caída fue ${pct(M[i].prueba.caida, 0)}). A cambio, ganó poco: ${pct(M[i].prueba.anual)} al año.`;
+  } else if (criterio === "equilibrado") {
+    i = M.reduce((a, m, k) => m.prueba.anual / Math.abs(m.prueba.caida) > M[a].prueba.anual / Math.abs(M[a].prueba.caida) ? k : a, 0);
+    por = `Desde 2018 tuvo la mejor mezcla entre ganar y no asustarse: ${pct(M[i].prueba.anual)} al año, con una peor caída de ${pct(M[i].prueba.caida, 0)}.`;
+  } else {
+    const g = R.map(r => gananciaRobot(r, D.robots.inicio));
+    i = g.reduce((a, v, k) => v > g[a] ? k : a, 0);
+    if (Math.max(...g) - Math.min(...g) < 0.0005) {
+      simSugerencia = `<div class="aviso">La competencia recién empezó y todos los robots van empatados. Prueba esta opción en unos días.</div>`;
+      pintar(); return;
+    }
+    por = `Es el que va ganando en la competencia desde el ${fecha(D.robots.inicio)} (${pct(g[i], 2)}). Ojo: con pocos días esto es casi pura suerte; el que gana hoy muchas veces no es el que gana mañana.`;
+  }
+  simRobot = i;
+  simSugerencia = `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>Te sugerimos: ${FICHAS[i].emoji} ${esc(R[i].nombre)}</b><br>${por}<br>Abajo puedes conocerlo y decidir si lo usas.</div>`;
+  pintar();
+}
 function comparativa(c) {
   const R = D.robots.robots, desde = c.inicio, mio = valorCuenta(c) / c.inicial - 1;
-  const filas = R.map((r, i) => {
-    const s = r.serie, k = s.findIndex(x => x[0] >= desde);
-    const g = k < 0 ? 0 : s[s.length - 1][1] / s[k][1] - 1;
-    return {nombre: `${FICHAS[i].emoji} ${r.nombre}`, g, yo: false};
-  });
+  const filas = R.map((r, i) => ({nombre: `${FICHAS[i].emoji} ${r.nombre}`, g: gananciaRobot(r, desde), yo: false}));
   filas.push({nombre: "🙋 Yo", g: mio, yo: true});
   filas.sort((a, b) => (b.g - a.g) || (b.yo - a.yo));
   const med = ["🥇", "🥈", "🥉"];
@@ -559,7 +592,8 @@ function comparativa(c) {
       <div class="fila" style="justify-content:space-between"><b>${med[j] || (j + 1) + "."} ${f.nombre}</b>
       <b class="${clase(f.g)}" style="background:none;font-size:20px">${pct(f.g, 2)}</b></div>
       <div class="chica">Con tus ${usd(c.inicial, 2)} ${f.yo ? "tienes hoy" : "este robot tendría"} ${usd(c.inicial * (1 + f.g), 2)}</div></li>`).join("")}</ul>
-    <p class="chica" style="margin:8px 0 0">Comparado desde el ${fecha(desde)}, el día que empezaste. Los robots se miden con el último cierre de la bolsa.</p></div>`;
+    <p class="chica" style="margin:8px 0 0">Comparado desde el ${fecha(desde)}, el día que empezaste, con los precios de ${cuandoTxt(ultimo("SPY").cuando)}.
+    ${Math.abs(mio) < 0.0005 && R.every(r => Math.abs(gananciaRobot(r, desde)) < 0.0005) ? "<br><b>Todos están en 0% porque el precio todavía no se ha movido desde que empezaste.</b> Cuando abra la bolsa empezarán a separarse." : ""}</p></div>`;
 }
 function abrirTrade(tipo) { trade = (trade && trade.tipo === tipo && trade.t === simFondo) ? null : {t: simFondo, tipo, monto: null}; pintar(); }
 function maxTrade(c, t, tipo) { return tipo === "comprar" ? c.efectivo / (1 + COSTO_OP) : (c.pos[t] || 0) * ultimo(t).precio; }
@@ -795,8 +829,17 @@ function simulador() {
   ${c.auto && c.sigue != null ? `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>Ahora tu dinero lo maneja «${esc(R[c.sigue].nombre)}».</b><br>
      Cada vez que abras el simulador, si el robot cambió de idea, tu dinero se acomoda solo.
      <button class="chip ancho" style="margin-top:10px" onclick="apagarAuto()">Apagar: quiero decidir yo</button></div>` : ""}
-  <p>Primero elige un robot. Toca su nombre para conocerlo:</p>
-  <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};pintar()">${FICHAS[i].emoji} ${esc(r.nombre)}</button>`).join("")}</div>
+  <div class="tarjeta"><h3>🧭 ¿Cuál elijo? Que la app te sugiera uno</h3>
+    <p class="chica">Toca lo que más te importa:</p>
+    <div class="grid2">
+      <button class="chip ancho" onclick="sugerir('gano')">🏆 El que más ha ganado</button>
+      <button class="chip ancho" onclick="sugerir('tranquilo')">🛡️ El más tranquilo (cae menos)</button>
+      <button class="chip ancho" onclick="sugerir('equilibrado')">⚖️ El más equilibrado</button>
+      <button class="chip ancho" onclick="sugerir('hoy')">📈 El que va ganando ahora</button>
+    </div>
+    ${simSugerencia}</div>
+  <p>O elige tú un robot. Toca su nombre para conocerlo:</p>
+  <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};simSugerencia='';pintar()">${FICHAS[i].emoji} ${esc(r.nombre)}</button>`).join("")}</div>
   <div class="tarjeta"><h3>${FICHAS[simRobot].emoji} ${esc(rb.nombre)}</h3>
     ${ficha(simRobot)}
     <p style="margin-top:12px"><b>Hoy este robot tiene:</b> ${esc(tiene(rb.pesos))}</p>
