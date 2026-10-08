@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Nuestra Inversión</title>
+<title>Trading Algorítmico</title>
 <meta name="description" content="Práctica familiar de inversión con robots y precios reales">
-<meta name="theme-color" content="#1F3A5F">
+<meta name="theme-color" content="#1C1C22">
 <meta name="color-scheme" content="light">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono-192.png">
@@ -199,7 +199,7 @@ const pie = () => `<footer>Práctica educativa con dinero ficticio. No es una re
 function inicio() {
   const m = D.mercado;
   return `
-  <h1>Nuestra Inversión</h1>
+  <h1>Trading Algorítmico</h1>
   <p class="sub">Práctica familiar con precios reales · datos del ${fecha(D.fecha_precios)}</p>
   ${D.demo ? '<div class="aviso oro"><b>Datos de prueba.</b> Estos números son inventados. En unos minutos se reemplazan por precios reales.</div>' : ""}
   <button class="semaforo s-${m.color}" onclick="ir('mercado')" aria-label="Ver cómo está el mercado hoy">
@@ -208,7 +208,7 @@ function inicio() {
   <div class="botones">
     ${btn("mercado", "🚦", "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
     ${btn("simulador", "💼", "Mi simulador", "Juega a invertir con dinero de mentira")}
-    ${btn("robots", "🤖", "Competencia de robots", "6 robots con US$ 10,000 de mentira")}
+    ${btn("robots", "🤖", "Competencia de robots", "6 robots compiten con dinero de mentira")}
     ${btn("historia", "📜", "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
     ${btn("calculadora", "🧮", "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
     ${btn("ayuda", "❓", "¿Qué es todo esto?", "Explicaciones en palabras sencillas")}
@@ -336,7 +336,7 @@ function robots() {
     <p class="chica" style="margin:4px 0 6px">O escribe otro monto (en dólares):</p>
     <input id="cmonto" type="number" inputmode="decimal" min="1" value="${M}" onchange="compMonto=Math.max(1,+this.value||1);pintar()"></div>
   <h2>🏁 ¿Quién va ganando?</h2>
-  <p>Elige cuánto tiempo hacia atrás quieres mirar:</p>
+  <p>Elige cuánto tiempo hacia atrás quieres mirar. Estos periodos ya tienen datos (los robots siguen sus mismas reglas con los precios reales de esos días), así que no hace falta esperar.</p>
   ${chipsVentana(compVentana, "verVentana")}
   ${rankingVentana(compVentana, M)}
   <h2>La competencia desde el ${fecha(R.inicio)}</h2><div class="banner"><b>${esc(titular)}</b>${R.dias < 60 ? '<span class="chica">Aún es muy pronto: con menos de 3 meses, ganar o perder es casi pura suerte.</span>' : ""}</div>
@@ -737,6 +737,10 @@ function infoVela(i) {
     `<b class="${clase(cambio)}" style="background:none">(${pct(cambio, 2)})</b>. Lo más alto: ${usd(h, 2)} · lo más bajo: ${usd(l, 2)}.`;
 }
 
+const NOTA_15MIN = `<div class="aviso oro"><b>⏱️ Importante: los robots NO deciden cada 15 minutos</b><br>
+  Los robots toman decisiones <b>una vez al día</b> (al cierre de la bolsa) o <b>una vez al mes</b>, según cada uno.
+  Las velas de 15 minutos o de 1 hora son solo una <b>lupa para mirar el precio</b> con más detalle: sirven de referencia, no son una señal para comprar o vender.
+  <span class="chica" style="display:block;margin-top:4px">No hace falta mirar la app cada rato: con mirarla una vez al día, o incluso una vez por semana, es suficiente.</span></div>`;
 /* ---------- textos de ayuda ---------- */
 const AYUDA_VELAS = `<details><summary>¿Cómo leo las velas?</summary>
   <p>Cada "vela" es un pedazo de tiempo (15 minutos, una hora, un día o una semana, según el botón que elijas).</p>
@@ -887,6 +891,7 @@ function simulador() {
     ${grafVelas}${variacion}
     <p id="infovela" class="chica" style="min-height:22px;margin:8px 0 0">Toca una vela para ver sus números.</p>
     ${AYUDA_VELAS}
+    ${NOTA_15MIN}
     <p class="chica" style="margin:8px 0 0">${abierta ? "🟢 La bolsa está <b>abierta</b> ahora." : "🔴 La bolsa está <b>cerrada</b> ahora."}
       Abre de lunes a viernes ${horarioLima()} (hora de Lima). Los precios de esta app se actualizan <b>cada hora</b> mientras está abierta.</p>
   </div>
@@ -940,10 +945,13 @@ function ayuda() {
   return `${barra()}
   <h1>¿Qué es todo esto?</h1>
   <p class="sub">Toca cada pregunta para ver la respuesta</p>
-  ${q("¿Qué es esta app?", "<p>Es una práctica familiar para aprender a invertir sin arriesgar dinero. Usa los precios reales de la bolsa de Nueva York y se actualiza sola cada día hábil por la tarde.</p>")}
+  ${q("¿Qué es esta app?", "<p>«Trading Algorítmico» es una práctica familiar para aprender a invertir sin arriesgar dinero. Usa los precios reales de la bolsa de Nueva York y se actualiza sola cada día hábil por la tarde.</p>")}
   ${q("¿Es dinero real?", "<p><b>No.</b> Todos los montos son de mentira. Nadie compra ni vende nada de verdad.</p>")}
   ${q("¿Qué es un robot?", "<p>Es una lista de reglas fijas que la computadora sigue al pie de la letra, por ejemplo: «si el mercado viene subiendo, compra; si viene bajando, guarda el dinero». No se asusta ni se emociona. A esto se le llama <b>trading algorítmico</b>.</p>")}
   ${q("¿Qué es una acción, un bono y un fondo?", "<p><b>Acción:</b> un pedacito de una empresa. Puede subir mucho, pero también caer mucho.</p><p><b>Bono:</b> un préstamo a un gobierno o empresa que paga intereses. Se mueve poco y sirve de refugio.</p><p><b>Fondo (ETF):</b> una canasta con cientos de acciones o bonos. Con una sola compra uno reparte el riesgo.</p>")}
+  ${q("¿Los robots deciden cada 15 minutos?", "<p><b>No.</b> Cada robot decide <b>una vez al día</b> (al cierre de la bolsa) o <b>una vez al mes</b>. Las velas de 15 minutos o de 1 hora son solo una lupa para ver el precio con más detalle; sirven de referencia, no son una orden de comprar o vender.</p><p>Por eso no hace falta mirar la app a cada rato: una vez al día, o una vez por semana, es suficiente.</p>")}
+  ${q("¿Tengo que dejar la app abierta?", "<p><b>No.</b> Todo funciona solo en internet: los precios se actualizan cada hora mientras la bolsa está abierta y los robots hacen sus operaciones al cierre de cada día, aunque tu celular esté apagado. La app solo te muestra los resultados cuando la abres.</p><p>Única excepción: en «Mi simulador», si dejaste que un robot maneje tu dinero, los cambios se aplican la próxima vez que abras el simulador.</p>")}
+  ${q("¿Cuándo sabré qué robot es mejor?", "<p>En «¿Quién va ganando?» ya puedes ver desde hoy quién ganó en la última semana, mes o año. Pero para confiar en un robot conviene mirar periodos largos: <b>al menos 3 meses, idealmente 6 o más</b>. En periodos cortos el ganador suele ser cuestión de suerte.</p>")}
   ${q("¿Qué significa el semáforo?", "<p>Resume en un color si las acciones de EE. UU. vienen subiendo (verde), dudando (amarillo) o cayendo (rojo). Describe el pasado reciente; no adivina el futuro.</p>")}
   ${D.robots.robots.map((r, i) => q(`${FICHAS[i].emoji} Robot «${esc(r.nombre)}»`, ficha(i))).join("\n  ")}
   ${q("¿Cada cuánto debemos mirarla?", "<p>Una vez por semana es suficiente. Los robots casi no hacen operaciones: la mayoría decide una sola vez al mes.</p>")}

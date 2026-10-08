@@ -1,5 +1,5 @@
 // Permite abrir la app sin internet mostrando los últimos datos guardados.
-const CACHE = "inversion-v8";
+const CACHE = "trading-v9";
 const BASE = ["./", "index.html", "manifest.json", "icono-192.png", "icono-512.png"];
 
 self.addEventListener("install", e => {

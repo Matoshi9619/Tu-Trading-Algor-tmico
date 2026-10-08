@@ -1,4 +1,4 @@
-# Nuestra Inversión
+# Trading Algorítmico
 
 App familiar para aprender a invertir **sin dinero real**, con precios reales de la bolsa.
 
