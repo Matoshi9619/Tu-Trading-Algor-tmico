@@ -106,7 +106,7 @@ def mercado(p: pd.DataFrame, tc: pd.Series) -> dict:
 
     if sobre and caida > -0.05:
         color, titular = "verde", "El mercado está en subida"
-        cerca = ("en su punto más alto del último año" if caida > -0.01
+        cerca = ("en su punto más alto" if caida > -0.01
                  else f"apenas {abs(caida):.0%} por debajo de su punto más alto")
         texto = ("Las acciones de EE. UU. están por encima de su precio promedio del último año "
                  f"y {cerca}. Es un momento tranquilo.")
