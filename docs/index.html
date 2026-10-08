@@ -301,8 +301,9 @@ const QUE_ES_ROBOT = `<div class="aviso"><b>¿Qué es un "robot" aquí?</b><br>
   No es una máquina: es una <b>receta de reglas fijas</b> que la computadora sigue al pie de la letra, sin miedo ni emoción.
   Cada robot recibió ${"US$"} 10,000 de mentira y los invierte según su receta, con precios reales. Así vemos cuál receta funciona mejor.</div>`;
 
+let compMonto = 1000, compVentana = "mes";
 function robots() {
-  const R = D.robots, ini = R.capital;
+  const R = D.robots, ini = R.capital, M = compMonto, k = M / ini;
   const lista = R.robots.slice();
   const ref = lista[0], mejor = lista.reduce((a, b) => b.valor > a.valor ? b : a);
   const g = mejor.valor / ini - 1;
@@ -311,35 +312,45 @@ function robots() {
     : (mejor === ref || Math.abs(mejor.valor - ref.valor) < 0.01) ? `Por ahora ningún robot le gana a "Sin hacer nada" (${pct(ref.valor / ini - 1)})`
     : `Va ganando: ${mejor.nombre} (${pct(g)})`;
   const n = Math.max(...lista.map(r => r.serie.length));
-  const series = lista.map((r, i) => ({valores: r.serie.map(x => x[1]), color: HEX[i], grueso: i === 0}));
+  const series = lista.map((r, i) => ({valores: r.serie.map(x => x[1] * k), color: HEX[i], grueso: i === 0}));
   const etiq = n >= 2 ? [[0, fecha(lista[0].serie[0][0])], [n - 1, fecha(lista[0].serie[n - 1][0])]] : null;
   const tarjetas = lista.map((r, i) => {
     const c = r.valor - ini;
     return `<div class="tarjeta robot" onclick="this.querySelector('.larga').classList.toggle('oculto')" role="button" tabindex="0">
       <div class="cab"><span class="punto" style="background:${HEX[i]}"></span><h3 style="margin:0">${esc(r.nombre)}</h3>${i === 0 ? '<span class="ref">REFERENCIA</span>' : ""}</div>
       <p style="margin:6px 0 8px">${FICHAS[i].emoji} ${FICHAS[i].idea}</p>
-      <div class="fila"><span class="grande">${usd(r.valor)}</span><span class="pill ${clase(c / ini)}">${flecha(c / ini)} ${pct(c / ini)}</span></div>
+      <div class="fila"><span class="grande">${usd(r.valor * k, 2)}</span><span class="pill ${clase(c / ini)}">${flecha(c / ini)} ${pct(c / ini)}</span></div>
       <p style="margin:8px 0 0"><b>Ahora tiene:</b> ${esc(tiene(r.pesos))}</p>
       <div class="larga oculto" style="margin-top:12px;border-top:1px solid var(--borde);padding-top:12px">${ficha(i, true)}</div>
       <div class="mas">Toca para conocerlo mejor ▾</div></div>`;
   }).join("");
   const ops = R.operaciones.slice(0, 15).map(o =>
-    `<li><span class="chica">${fecha(o.fecha)}</span><br><b>${esc(o.robot)}</b> <span class="${o.accion === "compró" ? "sube" : "baja"}" style="font-weight:700">${o.accion}</span> ${esc(ACT[o.activo] || o.activo)} por ${usd(o.monto)}</li>`).join("")
+    `<li><span class="chica">${fecha(o.fecha)}</span><br><b>${esc(o.robot)}</b> <span class="${o.accion === "compró" ? "sube" : "baja"}" style="font-weight:700">${o.accion}</span> ${esc(ACT[o.activo] || o.activo)} por ${usd(o.monto * k, 2)}</li>`).join("")
     || "<li>Todavía no hay operaciones.</li>";
   return `${barra()}
   <h1>Competencia de robots</h1>
-  <p class="sub">Cada robot empezó el ${fecha(R.inicio)} con ${usd(ini)} de mentira · ${R.dias} día${R.dias === 1 ? "" : "s"} de bolsa</p>
-  ${QUE_ES_ROBOT}<div class="banner"><b>${esc(titular)}</b>${R.dias < 60 ? '<span class="chica">Aún es muy pronto: con menos de 3 meses, ganar o perder es casi pura suerte.</span>' : ""}</div>
+  <p class="sub">La competencia empezó el ${fecha(R.inicio)} · ${R.dias} día${R.dias === 1 ? "" : "s"} de bolsa</p>
+  ${QUE_ES_ROBOT}
+  <div class="tarjeta"><label class="campo" style="margin-top:0" for="cmonto">¿Con cuánto dinero quieres verlos jugar?</label>
+    <div class="chips" style="margin-bottom:10px">${[100, 1000, 10000].map(v => `<button class="chip" aria-pressed="${M === v}" onclick="compMonto=${v};pintar()">${usd(v)}</button>`).join("")}</div>
+    <p class="chica" style="margin:4px 0 6px">O escribe otro monto (en dólares):</p>
+    <input id="cmonto" type="number" inputmode="decimal" min="1" value="${M}" onchange="compMonto=Math.max(1,+this.value||1);pintar()"></div>
+  <h2>🏁 ¿Quién va ganando?</h2>
+  <p>Elige cuánto tiempo hacia atrás quieres mirar:</p>
+  ${chipsVentana(compVentana, "verVentana")}
+  ${rankingVentana(compVentana, M)}
+  <h2>La competencia desde el ${fecha(R.inicio)}</h2><div class="banner"><b>${esc(titular)}</b>${R.dias < 60 ? '<span class="chica">Aún es muy pronto: con menos de 3 meses, ganar o perder es casi pura suerte.</span>' : ""}</div>
   <div class="tarjeta"><h3>Así va cada robot</h3>
-    ${grafico(series, {alto: 250, base: ini, etiquetasX: etiq})}
+    ${grafico(series, {alto: 250, base: M, etiquetasX: etiq})}
     ${leyenda(lista.map(r => r.nombre))}
-    <p class="chica" style="margin-top:8px">La línea punteada son los ${usd(ini)} iniciales: arriba gana, abajo pierde.</p></div>
+    <p class="chica" style="margin-top:8px">La línea punteada son los ${usd(M)} iniciales: arriba gana, abajo pierde. Se anota un punto cada día al cierre de la bolsa.</p></div>
   <div class="grid2">${tarjetas}</div>
   <h2>Últimas compras y ventas</h2>
   <p class="chica">Es normal que haya pocas: la mayoría de robots decide solo una vez al mes.</p>
   <div class="tarjeta"><ul class="lista">${ops}</ul></div>${pie()}`;
 }
 
+function verVentana(w) { compVentana = w; pintar(); }
 let periodoHist = "todo", histMonto = 1000;
 const mesTxt = ym => { const [a, m] = ym.split("-"); return `${MESES_L[+m - 1]} de ${a}`; };
 function duracion(m) {
@@ -588,7 +599,39 @@ function gananciaRobot(r, desde) {
   const base = k < 0 ? s[s.length - 1][1] : s[k][1];
   return robotAhora(r) / base - 1;
 }
-let simSugerencia = "";
+const VENTANAS = [["hoy", "Hoy"], ["semana", "Última semana"], ["mes", "Último mes"], ["3m", "Últimos 3 meses"], ["anio", "Último año"]];
+const DIAS_V = {semana: 5, mes: 21, "3m": 63, anio: 252};
+function enCursoHoy() { const u = ultimo("SPY").cuando; return u.length > 10 && u.slice(0, 10) > D.fecha_precios; }
+function ventanaTxt(w) {
+  if (w === "hoy") return enCursoHoy() ? "hoy, desde que abrió la bolsa" : `el último día de bolsa (${fecha(D.fecha_precios)})`;
+  return {semana: "la última semana", mes: "el último mes", "3m": "los últimos 3 meses", anio: "el último año"}[w];
+}
+/* cuánto ganó cada robot en una ventana de tiempo, siguiendo sus mismas reglas, con el precio de esta hora */
+function gananciaVentana(i, w) {
+  const r = D.robots.robots[i], dd = D.historia.diario, f = robotAhora(r) / r.valor;
+  if (!dd) return gananciaRobot(r, D.robots.inicio);
+  const c = dd.curvas[String(i)], L = c.length;
+  const n = w === "hoy" ? (enCursoHoy() ? 0 : 1) : DIAS_V[w];
+  return c[L - 1] * f / c[Math.max(0, L - 1 - n)] - 1;
+}
+function chipsVentana(actual, accion) {
+  return `<div class="chips" style="margin:8px 0">${VENTANAS.map(([k, t]) =>
+    `<button class="chip" style="min-height:44px;padding:6px 14px;font-size:16px" aria-pressed="${actual === k}" onclick="${accion}('${k}')">${t}</button>`).join("")}</div>`;
+}
+function rankingVentana(w, monto) {
+  const R = D.robots.robots, med = ["🥇", "🥈", "🥉"];
+  const filas = R.map((r, i) => ({i, g: gananciaVentana(i, w)})).sort((a, b) => b.g - a.g);
+  const empate = filas[0].g - filas[filas.length - 1].g < 0.0005;
+  return `<div class="tarjeta"><p class="chica" style="margin:0 0 6px">Quién ganó más en <b>${ventanaTxt(w)}</b>, con ${usd(monto)}:</p>
+    ${empate ? `<div class="aviso" style="margin:6px 0">En este periodo todos van empatados porque el precio todavía no se ha movido. Prueba otro periodo.</div>` : ""}
+    <ul class="lista">${filas.map((f, j) => `<li><div class="fila" style="justify-content:space-between">
+      <b>${med[j] || (j + 1) + "."} ${FICHAS[f.i].emoji} ${esc(R[f.i].nombre)}</b>
+      <b class="${clase(f.g)}" style="background:none">${pct(f.g, 2)}</b></div>
+      <div class="chica">${usd(monto)} → ${usd(monto * (1 + f.g), 2)}</div></li>`).join("")}</ul>
+    <p class="chica" style="margin:8px 0 0">Mira cómo cambia el ganador según el periodo: el que gana en una semana muchas veces no es el que gana en un año.</p></div>`;
+}
+let simSugerencia = "", simVentana = "mes";
+function sugerirVentana(w) { simVentana = w; sugerir("hoy"); }
 function sugerir(criterio) {
   const R = D.robots.robots, M = D.historia.metricas, c = cuenta();
   let i, por;
@@ -602,13 +645,18 @@ function sugerir(criterio) {
     i = M.reduce((a, m, k) => m.prueba.anual / Math.abs(m.prueba.caida) > M[a].prueba.anual / Math.abs(M[a].prueba.caida) ? k : a, 0);
     por = `Desde 2018 tuvo la mejor mezcla entre ganar y no asustarse: ${pct(M[i].prueba.anual)} al año, con una peor caída de ${pct(M[i].prueba.caida, 0)}.`;
   } else {
-    const g = R.map(r => gananciaRobot(r, D.robots.inicio));
+    const g = R.map((r, k) => gananciaVentana(k, simVentana));
     i = g.reduce((a, v, k) => v > g[a] ? k : a, 0);
+    const elegir = `<p style="margin:0"><b>¿En qué periodo quieres ver quién va ganando?</b></p>${chipsVentana(simVentana, "sugerirVentana")}`;
     if (Math.max(...g) - Math.min(...g) < 0.0005) {
-      simSugerencia = `<div class="aviso">La competencia recién empezó y todos los robots van empatados. Prueba esta opción en unos días.</div>`;
+      simSugerencia = `<div class="aviso">${elegir}En ${ventanaTxt(simVentana)} todos los robots van empatados porque el precio no se ha movido. Elige otro periodo.</div>`;
       pintar(); return;
     }
-    por = `Es el que va ganando en la competencia desde el ${fecha(D.robots.inicio)} (${pct(g[i], 2)}). Ojo: con pocos días esto es casi pura suerte; el que gana hoy muchas veces no es el que gana mañana.`;
+    simRobot = i;
+    simSugerencia = `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)">${elegir}
+      <b>En ${ventanaTxt(simVentana)} va ganando: ${FICHAS[i].emoji} ${esc(R[i].nombre)} (${pct(g[i], 2)})</b><br>
+      Ojo: en periodos cortos el que gana suele ser por suerte, y cambia seguido. Cada cambio de robot cuesta una pequeña comisión.<br>Abajo puedes conocerlo y decidir si lo usas.</div>`;
+    pintar(); return;
   }
   simRobot = i;
   simSugerencia = `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>Te sugerimos: ${FICHAS[i].emoji} ${esc(R[i].nombre)}</b><br>${por}<br>Abajo puedes conocerlo y decidir si lo usas.</div>`;
