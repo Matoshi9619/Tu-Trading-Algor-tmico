@@ -6,78 +6,115 @@
 <title>Trading Algorítmico</title>
 <meta name="description" content="Práctica familiar de inversión con robots y precios reales">
 <meta name="theme-color" content="#1C1C22">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono-192.png">
 <link rel="apple-touch-icon" href="icono-192.png">
 <style>
 :root{
-  --fondo:#F4F1EA; --tarjeta:#FFFFFF; --tinta:#1B2430; --suave:#5B6573; --borde:#E2DDD2;
-  --azul:#1F3A5F; --azul2:#2C4F7C; --dorado:#9C7A45; --verde:#1A7443; --verde-f:#E3F2E8;
-  --rojo:#B42318; --rojo-f:#FBE6E3; --ambar:#A86500; --ambar-f:#FDF0D9;
-  --r1:#7D8796; --r2:#B08D57; --r3:#1F3A5F; --r4:#2E86AB; --r5:#7B4FA0; --r6:#D9822B;
-  --radio:18px;
+  --fondo:#F4F5F7; --tarjeta:#FFFFFF; --tinta:#101828; --suave:#5D6878; --borde:#E2E5EA;
+  --azul:#14243B; --azul2:#2C5A8C; --titulo:#14243B; --enlace:#2C5A8C; --dorado:#A7803F;
+  --verde:#157F3D; --verde-f:#E7F4EB; --verde-btn:#157F3D; --rojo:#BF3328; --rojo-f:#FBEAE8; --rojo-btn:#BF3328;
+  --ambar:#A16207; --ambar-f:#FDF3DF; --ico:#EEF1F6; --aviso:#EEF3FA; --oro-f:#F7F0E3; --grid:#E7E9ED; --pista:#ECEEF2;
+  --campo:#FFFFFF; --cab:rgba(244,245,247,.92); --sombra:0 1px 2px rgba(16,24,40,.04),0 2px 8px rgba(16,24,40,.05);
+  --s-verde:#BFE3CB; --s-amarillo:#F2D9A6; --s-rojo:#F3C3BD; --radio:16px;
+}
+[data-tema=oscuro]{
+  --fondo:#0D1117; --tarjeta:#161B22; --tinta:#E6E9EE; --suave:#98A2B3; --borde:#272E38;
+  --azul:#24406A; --azul2:#7FA7D6; --titulo:#F2F4F7; --enlace:#8DB4E2; --dorado:#C9A35F;
+  --verde:#4CC27E; --verde-f:#11291B; --verde-btn:#1E8449; --rojo:#F07A6E; --rojo-f:#33171A; --rojo-btn:#B83A2E;
+  --ambar:#EFB44A; --ambar-f:#2E2410; --ico:#1F2630; --aviso:#162131; --oro-f:#2A2215; --grid:#232A34; --pista:#212833;
+  --campo:#0F1419; --cab:rgba(13,17,23,.92); --sombra:0 1px 2px rgba(0,0,0,.4);
+  --s-verde:#1F5133; --s-amarillo:#5A4515; --s-rojo:#5C2620;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--fondo);color:var(--tinta);font:19px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
-  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-main{max-width:980px;margin:0 auto;padding:16px 16px 40px}
-h1{font-size:30px;line-height:1.15;margin:8px 0 4px;color:var(--azul)}
-h2{font-size:24px;line-height:1.2;margin:28px 0 10px;color:var(--azul)}
-h3{font-size:20px;margin:0 0 4px}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:19px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-font-smoothing:antialiased}
+main{max-width:980px;margin:0 auto;padding:0 16px 120px}
+h1{font-size:29px;line-height:1.15;margin:14px 0 4px;color:var(--titulo);letter-spacing:-.4px;font-weight:800}
+h2{font-size:23px;line-height:1.2;margin:30px 0 10px;color:var(--titulo);letter-spacing:-.2px;font-weight:700}
+h3{font-size:20px;margin:0 0 4px;font-weight:700}
 p{margin:0 0 12px}
 .sub{color:var(--suave);font-size:16px}
 .chica{font-size:15px;color:var(--suave)}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 .oculto{display:none!important}
+.grande,.pill,.banner b,.lista b,.periodos b{font-variant-numeric:tabular-nums}
+
+/* barra superior */
+.appbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;margin:0 -16px 4px;padding:10px 16px;
+  background:var(--cab);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--borde)}
+.appbar img{width:36px;height:36px;border-radius:9px}
+.appbar .marca{font-weight:800;font-size:18px;letter-spacing:-.2px;color:var(--titulo);line-height:1.1}
+.appbar .marca small{display:block;font-weight:500;font-size:13px;color:var(--suave);letter-spacing:0}
+.atras{display:inline-flex;align-items:center;gap:6px;background:var(--azul);color:#fff;border:0;border-radius:12px;padding:10px 16px 10px 12px;
+  font-size:18px;font-weight:700;cursor:pointer;min-height:48px}
+.atras svg{width:22px;height:22px}
+.engranaje{margin-left:auto;background:var(--tarjeta);border:1px solid var(--borde);border-radius:12px;width:48px;height:48px;display:grid;place-items:center;cursor:pointer;color:var(--tinta)}
+
+/* navegación inferior */
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--tarjeta);border-top:1px solid var(--borde);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));display:flex;justify-content:center}
+#nav .in{display:flex;width:100%;max-width:640px}
+#nav button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;cursor:pointer;
+  color:var(--suave);font-size:13px;font-weight:600;border-radius:12px;min-height:58px}
+#nav button svg{width:26px;height:26px}
+#nav button[aria-current=page]{color:var(--enlace)}
+#nav button[aria-current=page] svg{background:var(--aviso);border-radius:10px;padding:3px;width:40px;height:30px}
 
 /* inicio */
-.botones{display:grid;gap:14px;margin-top:18px}
+.hero{background:linear-gradient(135deg,#14243B 0%,#1E3A5F 100%);color:#fff;border-radius:20px;padding:20px;margin:14px 0 6px;position:relative;overflow:hidden}
+.hero h1{color:#fff;margin:0 0 4px;font-size:26px}
+.hero p{color:#C9D5E6;margin:0;font-size:16px}
+.hero:after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(201,163,95,.18)}
+.botones{display:grid;gap:12px;margin-top:16px}
 @media(min-width:760px){.botones{grid-template-columns:1fr 1fr}}
-.boton{display:flex;align-items:center;gap:16px;width:100%;text-align:left;color:var(--tinta);background:var(--tarjeta);border:2px solid var(--borde);
-  border-radius:var(--radio);padding:18px;cursor:pointer;min-height:96px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
-.boton:active{transform:scale(.99)}
-.boton:focus-visible,.volver:focus-visible,.chip:focus-visible{outline:3px solid var(--azul2);outline-offset:2px}
-.boton .ico{flex:0 0 60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:32px;background:#EEF2F7}
-.boton b{display:block;font-size:22px;line-height:1.2;color:var(--tinta)}
+.boton{display:flex;align-items:center;gap:16px;width:100%;text-align:left;color:var(--tinta);background:var(--tarjeta);border:1px solid var(--borde);
+  border-radius:var(--radio);padding:16px;cursor:pointer;min-height:92px;box-shadow:var(--sombra);transition:transform .08s}
+.boton:active{transform:scale(.985)}
+.boton:focus-visible,.atras:focus-visible,.chip:focus-visible,#nav button:focus-visible{outline:3px solid var(--azul2);outline-offset:2px}
+.boton .ico{flex:0 0 56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:30px;background:var(--ico);color:var(--enlace)}
+.boton .ico svg{width:30px;height:30px}
+.boton b{display:block;font-size:21px;line-height:1.2;color:var(--tinta)}
 .boton span{display:block;color:var(--suave);font-size:16px;margin-top:2px}
 .boton .flecha{margin-left:auto;font-size:28px;color:var(--suave)}
 
-/* semaforo resumen */
-.semaforo{display:flex;gap:16px;align-items:center;border-radius:var(--radio);padding:18px;border:2px solid transparent;cursor:pointer;width:100%;text-align:left;color:var(--tinta)}
-.semaforo .luz{flex:0 0 56px;height:56px;border-radius:50%;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
-.semaforo b{font-size:23px;display:block;line-height:1.2}
-.s-verde{background:var(--verde-f);border-color:#B9DEC6}.s-verde .luz{background:#2E9E5B}
-.s-amarillo{background:var(--ambar-f);border-color:#F1D39E}.s-amarillo .luz{background:#E9A23B}
-.s-rojo{background:var(--rojo-f);border-color:#F2BDB6}.s-rojo .luz{background:#D64535}
+/* semaforo */
+.semaforo{display:flex;gap:16px;align-items:center;border-radius:var(--radio);padding:16px 18px;border:1px solid transparent;cursor:pointer;width:100%;text-align:left;color:var(--tinta)}
+.semaforo .luz{flex:0 0 48px;height:48px;border-radius:50%;box-shadow:0 0 0 6px rgba(255,255,255,.35),inset 0 -4px 0 rgba(0,0,0,.15)}
+.semaforo b{font-size:22px;display:block;line-height:1.2}
+.s-verde{background:var(--verde-f);border-color:var(--s-verde)}.s-verde .luz{background:#2E9E5B}
+.s-amarillo{background:var(--ambar-f);border-color:var(--s-amarillo)}.s-amarillo .luz{background:#E9A23B}
+.s-rojo{background:var(--rojo-f);border-color:var(--s-rojo)}.s-rojo .luz{background:#D64535}
 
-/* pantallas */
-.barra{position:sticky;top:0;z-index:5;background:var(--fondo);padding:10px 0 8px;margin:-16px 0 6px}
+/* componentes */
 .volver{display:inline-flex;align-items:center;gap:10px;background:var(--azul);color:#fff;border:0;border-radius:14px;padding:14px 22px;
   font-size:20px;font-weight:700;cursor:pointer;min-height:56px}
-.tarjeta{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);padding:18px;margin:12px 0}
+.tarjeta{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);padding:18px;margin:12px 0;box-shadow:var(--sombra)}
 .grid2{display:grid;gap:12px}
 .grid2>*,.tarjeta{min-width:0}
 @media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
-.grande{font-size:34px;font-weight:800;line-height:1.1;letter-spacing:-.5px}
+.grande{font-size:34px;font-weight:800;line-height:1.1;letter-spacing:-.8px}
 .pill{display:inline-block;border-radius:999px;padding:3px 12px;font-weight:700;font-size:17px;white-space:nowrap}
-.sube{background:var(--verde-f);color:var(--verde)}.baja{background:var(--rojo-f);color:var(--rojo)}.igual{background:#EEF0F3;color:var(--suave)}
+.sube{background:var(--verde-f);color:var(--verde)}.baja{background:var(--rojo-f);color:var(--rojo)}.igual{background:var(--pista);color:var(--suave)}
 .fila{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
 .periodos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
 @media(min-width:1100px){.periodos{grid-template-columns:repeat(4,1fr)}}
-.periodos div{background:#F7F5F0;border-radius:12px;padding:8px;text-align:center}
+.periodos div{background:var(--pista);border-radius:12px;padding:8px;text-align:center}
 .periodos small{display:block;color:var(--suave);font-size:14px}
-.aviso{background:#EEF2F7;border-left:6px solid var(--azul2);border-radius:12px;padding:14px 16px;margin:14px 0}
-.aviso.oro{background:#F6EFE3;border-color:var(--dorado)}
-.banner{background:var(--azul);color:#fff;border-radius:var(--radio);padding:18px;margin:12px 0}
+.aviso{background:var(--aviso);border-left:5px solid var(--azul2);border-radius:12px;padding:14px 16px;margin:14px 0}
+.aviso.oro{background:var(--oro-f);border-color:var(--dorado)}
+.banner{background:linear-gradient(135deg,#14243B 0%,#1E3A5F 100%);color:#fff;border-radius:var(--radio);padding:20px;margin:12px 0}
 .banner b{font-size:23px;display:block;line-height:1.25}
-.banner .chica{color:#D3DEEC}
+.banner .chica{color:#C9D5E6}
 .robot{cursor:pointer}
 .robot .cab{display:flex;align-items:center;gap:10px}
-.punto{flex:0 0 16px;height:16px;border-radius:50%}
+.punto{flex:0 0 14px;height:14px;border-radius:50%}
 .ref{background:var(--dorado);color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:2px 8px;letter-spacing:.5px}
-.mas{color:var(--azul2);font-size:16px;font-weight:600;margin-top:6px}
+.mas{color:var(--enlace);font-size:16px;font-weight:600;margin-top:6px}
 .leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0 0;font-size:16px}
 .leyenda span{display:inline-flex;align-items:center;gap:6px}
 .leyenda i{width:22px;height:5px;border-radius:3px;display:inline-block}
@@ -86,7 +123,7 @@ svg text{font-family:inherit}
 .lista li{padding:12px 0;border-bottom:1px solid var(--borde)}
 .lista li:last-child{border-bottom:0}
 .chips{display:flex;flex-wrap:wrap;gap:10px}
-.chip{border:2px solid var(--borde);background:var(--tarjeta);border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;min-height:52px;font-size:18px}
+.chip{border:1px solid var(--borde);background:var(--tarjeta);border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;min-height:52px;font-size:18px;color:var(--tinta)}
 .chip[aria-pressed=true]{background:var(--azul);border-color:var(--azul);color:#fff}
 .chip:disabled{opacity:.35;cursor:default}
 .ancho{width:100%;justify-content:center}
@@ -96,29 +133,41 @@ svg text{font-family:inherit}
 .ficha p{margin:0 0 12px}
 .explica{background:var(--verde-f);border-radius:12px;padding:12px 14px;margin:10px 0}
 .explica .chica{display:block;margin-top:4px}
+.soles{display:block;font-size:15px;opacity:.85;font-weight:500}
 label.campo{display:block;font-weight:700;margin:16px 0 8px}
-select,input[type=number]{width:100%;min-height:58px;border:2px solid var(--borde);border-radius:14px;padding:10px 14px;background:#fff;font-size:20px}
+select,input[type=number],textarea{width:100%;min-height:58px;border:1px solid var(--borde);border-radius:14px;padding:10px 14px;background:var(--campo);font-size:20px;color:var(--tinta)}
+textarea{min-height:auto;font-size:14px}
 .barras .b{margin:10px 0}
 .barras .t{display:flex;justify-content:space-between;gap:10px;font-size:17px}
-.barras .pista{height:14px;background:#F0EDE6;border-radius:8px;position:relative;overflow:hidden;margin-top:4px}
+.barras .pista{height:12px;background:var(--pista);border-radius:8px;position:relative;overflow:hidden;margin-top:4px}
 .barras .pista i{position:absolute;top:0;bottom:0;border-radius:8px}
-details{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);margin:10px 0;padding:0 18px}
+details{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);margin:10px 0;padding:0 18px;box-shadow:var(--sombra)}
 summary{cursor:pointer;font-weight:700;font-size:20px;padding:16px 0;list-style:none;display:flex;justify-content:space-between;gap:10px}
-summary::after{content:"＋";color:var(--azul2)}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";color:var(--enlace)}
 details[open] summary::after{content:"－"}
 details p,details ul{padding-bottom:6px}
 footer{margin-top:30px;color:var(--suave);font-size:14px;text-align:center}
 .cargando{padding:60px 0;text-align:center;color:var(--suave)}
 .tabla-rank .pos{font-size:22px;font-weight:800;color:var(--suave);width:34px;flex:0 0 34px}
+.ajuste{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--borde)}
+.ajuste:last-child{border-bottom:0}
+.interruptor{position:relative;flex:0 0 64px;height:36px;border-radius:999px;background:var(--pista);border:1px solid var(--borde);cursor:pointer}
+.interruptor:after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.interruptor[aria-checked=true]{background:var(--verde-btn);border-color:var(--verde-btn)}
+.interruptor[aria-checked=true]:after{left:31px}
 </style>
 </head>
 <body>
 <main id="app"><div class="cargando">Cargando datos…</div></main>
+<nav id="nav" aria-label="Menú principal"><div class="in"></div></nav>
 
 <script>
 "use strict";
 const COLORES = ["var(--r1)","var(--r2)","var(--r3)","var(--r4)","var(--r5)","var(--r6)"];
-const HEX = ["#7D8796","#B08D57","#1F3A5F","#2E86AB","#7B4FA0","#D9822B"];
+const HEX_CLARO = ["#7D8796","#B08D57","#1F3A5F","#2E86AB","#7B4FA0","#D9822B"];
+const HEX_OSCURO = ["#9AA4B2","#C9A35F","#7FA7D6","#38BDF8","#B48CE0","#F0A35C"];
+let HEX = HEX_CLARO.slice();
 const ACT = {SPY:"Acciones de EE. UU.",EFA:"Acciones del resto del mundo",IEF:"Bonos del gobierno de EE. UU.",SHY:"Bonos de corto plazo"};
 const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -133,6 +182,7 @@ const fecha = iso => { const [a, m, d] = iso.slice(0, 10).split("-"); return `${
 const clase = x => x > 0.0005 ? "sube" : x < -0.0005 ? "baja" : "igual";
 const flecha = x => x > 0.0005 ? "▲" : x < -0.0005 ? "▼" : "●";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const enSoles = x => AJ.soles && D && D.mercado ? `<span class="soles">≈ S/ ${Math.round(x * D.mercado.tipo_cambio).toLocaleString("es-PE")}</span>` : "";
 const tiene = pesos => {
   const p = Object.entries(pesos || {}).filter(([, w]) => w > 0.01).sort((a, b) => b[1] - a[1]);
   const resto = 1 - p.reduce((s, [, w]) => s + w, 0);
@@ -170,16 +220,16 @@ function grafico(series, {alto = 260, log = false, base = null, marca = null, et
   }
   const dec = ticks.some(t => Math.abs(t - Math.round(t)) > 1e-6) ? (ticks.some(t => Math.abs(t * 10 - Math.round(t * 10)) > 1e-6) ? 2 : 1) : 0;
   ticks.forEach(t => { const y = Y(t);
-    g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#E8E4DB"/>`;
-    g += `<text x="${L - 6}" y="${y + 5}" text-anchor="end" font-size="${fs}" fill="#5B6573">${t.toLocaleString("es-PE", {maximumFractionDigits: dec, minimumFractionDigits: dec})}</text>`; });
-  if (base != null) g += `<line x1="${L}" x2="${W - R}" y1="${Y(base)}" y2="${Y(base)}" stroke="#1B2430" stroke-dasharray="6 5" stroke-width="1.2"/>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" style="stroke:var(--grid)"/>`;
+    g += `<text x="${L - 6}" y="${y + 5}" text-anchor="end" font-size="${fs}" style="fill:var(--suave)">${t.toLocaleString("es-PE", {maximumFractionDigits: dec, minimumFractionDigits: dec})}</text>`; });
+  if (base != null) g += `<line x1="${L}" x2="${W - R}" y1="${Y(base)}" y2="${Y(base)}" style="stroke:var(--tinta)" stroke-dasharray="6 5" stroke-width="1.2"/>`;
   if (marca != null) g += `<line x1="${X(marca)}" x2="${X(marca)}" y1="${T}" y2="${H - B}" stroke="#9C7A45" stroke-dasharray="5 5" stroke-width="1.5"/>`;
   if (etiquetasX) etiquetasX.forEach(([i, txt], j, arr) => {
     const anc = j === 0 && arr.length <= 2 ? "start" : j === arr.length - 1 && arr.length <= 2 ? "end" : "middle";
-    g += `<text x="${X(i)}" y="${H - 8}" text-anchor="${anc}" font-size="${fs}" fill="#5B6573">${txt}</text>`; });
+    g += `<text x="${X(i)}" y="${H - 8}" text-anchor="${anc}" font-size="${fs}" style="fill:var(--suave)">${txt}</text>`; });
   series.forEach(s => {
     const pts = s.valores.map((v, i) => v == null ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(" ");
-    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${(s.grueso ? 4 : 2.6) * (chico ? 0.75 : 1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    g += `<polyline points="${pts}" fill="none" style="stroke:${s.color}" stroke-width="${(s.grueso ? 4 : 2.6) * (chico ? 0.75 : 1)}" stroke-linejoin="round" stroke-linecap="round"/>`;
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfico">${g}</svg>`;
 }
@@ -193,25 +243,41 @@ function ejeAnios(meses) {
 }
 
 /* ---------- pantallas ---------- */
-const barra = () => `<div class="barra"><button class="volver" onclick="ir('')">← Volver al inicio</button></div>`;
+/* ---------- iconos (trazo simple) ---------- */
+const ICONOS = {
+  inicio: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  mercado: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  simulador: '<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M3 10h18M16 15h2"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V6"/>',
+  robots: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9.5 13h.01M14.5 13h.01M9 16.5h6M3 12v3M21 12v3"/>',
+  historia: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  calculadora: '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/>',
+  ayuda: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.4M12 17h.01"/>',
+  ajustes: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  atras: '<path d="M15 5l-7 7 7 7"/>',
+};
+const icono = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n]}</svg>`;
+const barra = () => `<header class="appbar"><button class="atras" onclick="ir('')" aria-label="Volver al inicio">${icono("atras")} Volver</button>
+  <img src="icono-192.png" alt=""><span class="marca">Trading Algorítmico</span></header>`;
 const pie = () => `<footer>Práctica educativa con dinero ficticio. No es una recomendación de inversión.<br>Precios reales al cierre del ${fecha(D.fecha_precios)}.</footer>`;
 
 function inicio() {
   const m = D.mercado;
   return `
-  <h1>Trading Algorítmico</h1>
-  <p class="sub">Práctica familiar con precios reales · datos del ${fecha(D.fecha_precios)}</p>
+  <header class="appbar"><img src="icono-192.png" alt=""><span class="marca">Trading Algorítmico<small>Datos del ${fecha(D.fecha_precios)}</small></span>
+    <button class="engranaje" onclick="ir('ajustes')" aria-label="Ajustes">${icono("ajustes")}</button></header>
+  <div class="hero"><h1>Bienvenidos</h1><p>Aprendan a invertir con robots y precios reales de la bolsa de Nueva York, sin arriesgar dinero.</p></div>
   ${D.demo ? '<div class="aviso oro"><b>Datos de prueba.</b> Estos números son inventados. En unos minutos se reemplazan por precios reales.</div>' : ""}
   <button class="semaforo s-${m.color}" onclick="ir('mercado')" aria-label="Ver cómo está el mercado hoy">
     <span class="luz"></span><span><span class="chica">Hoy, en una frase:</span><b>${esc(m.titular)}</b></span>
   </button>
   <div class="botones">
-    ${btn("mercado", "🚦", "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
-    ${btn("simulador", "💼", "Mi simulador", "Juega a invertir con dinero de mentira")}
-    ${btn("robots", "🤖", "Competencia de robots", "6 robots compiten con dinero de mentira")}
-    ${btn("historia", "📜", "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
-    ${btn("calculadora", "🧮", "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
-    ${btn("ayuda", "❓", "¿Qué es todo esto?", "Explicaciones en palabras sencillas")}
+    ${btn("mercado", icono("mercado"), "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
+    ${btn("simulador", icono("simulador"), "Mi simulador", "Juega a invertir con dinero de mentira")}
+    ${btn("robots", icono("robots"), "Competencia de robots", "6 robots compiten con dinero de mentira")}
+    ${btn("historia", icono("historia"), "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
+    ${btn("calculadora", icono("calculadora"), "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
+    ${btn("ayuda", icono("ayuda"), "¿Qué es todo esto?", "Explicaciones en palabras sencillas")}
+    ${btn("ajustes", icono("ajustes"), "Ajustes", "Modo oscuro, tamaño de letra y más")}
   </div>${pie()}`;
 }
 const btn = (r, ico, t, s) => `<button class="boton" onclick="ir('${r}')"><span class="ico" aria-hidden="true">${ico}</span><span><b>${t}</b><span>${s}</span></span><span class="flecha" aria-hidden="true">›</span></button>`;
@@ -228,7 +294,7 @@ function mercado() {
         ${[["Semana", a.semana], ["Mes", a.mes], ["Año", a.anio], ["Desde su máximo", a.desde_maximo]].map(([t, v]) =>
           `<div><small>${t}</small><b class="${v == null ? "" : (v > 0.0005 ? "sube" : v < -0.0005 ? "baja" : "")}" style="background:none">${v == null ? "—" : pct(v)}</b></div>`).join("")}
       </div>
-      ${grafico([{valores: serie, color: a.sobre_promedio ? "#1A7443" : "#B42318", grueso: true}], {alto: 170})}
+      ${grafico([{valores: serie, color: a.sobre_promedio ? "var(--verde-btn)" : "var(--rojo-btn)", grueso: true}], {alto: 170})}
       <p class="chica">${a.sobre_promedio ? "✓ Está por encima de su precio promedio del último año (va subiendo)." : "✗ Está por debajo de su precio promedio del último año (viene bajando)."}</p>
       <p class="chica" style="margin:0">Fondo <b>${a.ticker}</b> · último año</p>
     </div>`;
@@ -379,7 +445,7 @@ function historia() {
       <div style="flex:1">
         <div class="cab fila"><span class="punto" style="background:${HEX[x.i]}"></span><h3 style="margin:0">${FICHAS[x.i].emoji} ${esc(x.nombre)}</h3>${x.i === 0 ? '<span class="ref">REFERENCIA</span>' : ""}</div>
         <p style="margin:8px 0 2px">Si en ${inicioTxt} hubieras puesto ${usd(M)}, hoy tendrías</p>
-        <div class="grande" style="font-size:30px">${usd(fin)}</div>
+        <div class="grande" style="font-size:30px">${usd(fin)}</div>${enSoles(fin)}
         <p class="chica" style="margin:2px 0 12px">${gan >= 0 ? `Ganaste ${usd(gan)}` : `Perdiste ${usd(-gan)}`}${veces >= 1.95 ? ` · tu dinero se multiplicó ${veces.toLocaleString("es-PE", {maximumFractionDigits: 1})} veces` : ""}</p>
         <div class="explica"><b>📈 En un año normal</b><br>
           Tu dinero creció en promedio <b>${pct(x.v.anual)}</b> cada año. Es decir, cada US$ 100 se volvían unos <b>US$ ${cien}</b> al año siguiente.
@@ -498,10 +564,10 @@ const QUE_ES = {
 const INTERVALOS = [["15m", "Cada 15 minutos"], ["1h", "Cada hora"], ["1d", "Cada día"], ["1wk", "Cada semana"]];
 const COSTO_OP = 0.001;
 const almacenOK = (() => { try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); return true; } catch (e) { return false; } })();
-let AUTO_AVISO = "", CUENTA = null, VELAS = null, simInicial = 100, simFondo = "SPY", simIntervalo = "15m", simRobot = 1, trade = null, simMsg = "";
+let VELAS_ACT = null, AUTO_AVISO = "", CUENTA = null, VELAS = null, simInicial = 100, simFondo = "SPY", simIntervalo = "15m", simRobot = 1, trade = null, simMsg = "";
 
 fetch("velas.json?v=" + Date.now(), {cache: "no-store"}).then(r => r.ok ? r.json() : null)
-  .then(v => { VELAS = v && v.velas ? v.velas : null; if (D && location.hash === "#simulador") pintar(); }).catch(() => {});
+  .then(v => { VELAS = v && v.velas ? v.velas : null; VELAS_ACT = v && v.actualizado; if (D && location.hash === "#simulador") pintar(); }).catch(() => {});
 
 function cuenta() {
   if (CUENTA) return CUENTA;
@@ -627,7 +693,7 @@ function rankingVentana(w, monto) {
     <ul class="lista">${filas.map((f, j) => `<li><div class="fila" style="justify-content:space-between">
       <b>${med[j] || (j + 1) + "."} ${FICHAS[f.i].emoji} ${esc(R[f.i].nombre)}</b>
       <b class="${clase(f.g)}" style="background:none">${pct(f.g, 2)}</b></div>
-      <div class="chica">${usd(monto)} → ${usd(monto * (1 + f.g), 2)}</div></li>`).join("")}</ul>
+      <div class="chica">${usd(monto)} → ${usd(monto * (1 + f.g), 2)}${AJ.soles ? ` (≈ S/ ${Math.round(monto * (1 + f.g) * D.mercado.tipo_cambio).toLocaleString("es-PE")})` : ""}</div></li>`).join("")}</ul>
     <p class="chica" style="margin:8px 0 0">Mira cómo cambia el ganador según el periodo: el que gana en una semana muchas veces no es el que gana en un año.</p></div>`;
 }
 let simSugerencia = "", simVentana = "mes";
@@ -668,7 +734,7 @@ function comparativa(c) {
   filas.push({nombre: "🙋 Yo", g: mio, yo: true});
   filas.sort((a, b) => (b.g - a.g) || (b.yo - a.yo));
   const med = ["🥇", "🥈", "🥉"];
-  return `<div class="tarjeta"><ul class="lista">${filas.map((f, j) => `<li style="${f.yo ? "background:#EEF2F7;margin:0 -18px;padding:12px 18px" : ""}">
+  return `<div class="tarjeta"><ul class="lista">${filas.map((f, j) => `<li style="${f.yo ? "background:var(--aviso);margin:0 -18px;padding:12px 18px" : ""}">
       <div class="fila" style="justify-content:space-between"><b>${med[j] || (j + 1) + "."} ${f.nombre}</b>
       <b class="${clase(f.g)}" style="background:none;font-size:20px">${pct(f.g, 2)}</b></div>
       <div class="chica">Con tus ${usd(c.inicial, 2)} ${f.yo ? "tienes hoy" : "este robot tendría"} ${usd(c.inicial * (1 + f.g), 2)}</div></li>`).join("")}</ul>
@@ -704,8 +770,8 @@ function velasSVG(bars, intervalo) {
   const st = [1, 2, 2.5, 5, 10].map(m => m * p10).find(v => v >= crudo);
   const dec = st < 1 ? 2 : 0;
   for (let t = Math.ceil(lo / st) * st; t <= hi; t += st) {
-    g += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" stroke="#E8E4DB"/>`;
-    g += `<text x="${L - 6}" y="${Y(t) + 5}" text-anchor="end" font-size="${fs}" fill="#5B6573">${t.toFixed(dec)}</text>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" style="stroke:var(--grid)"/>`;
+    g += `<text x="${L - 6}" y="${Y(t) + 5}" text-anchor="end" font-size="${fs}" style="fill:var(--suave)">${t.toFixed(dec)}</text>`;
   }
   const etiqueta = s => { const [f, h] = s.split(" "); const [a, m, d] = f.split("-");
     if (intervalo === "1wk") return `${MESES[+m - 1]} ${a.slice(2)}`;
@@ -723,10 +789,10 @@ function velasSVG(bars, intervalo) {
     g += `<g onclick="infoVela(${i})" style="cursor:pointer"><rect x="${X(i) - paso / 2}" y="${T}" width="${paso}" height="${H - T - B}" fill="transparent"/>
       <line x1="${X(i)}" x2="${X(i)}" y1="${Y(h)}" y2="${Y(l)}" stroke="${col}" stroke-width="1.5"/>
       <rect x="${X(i) - bw / 2}" y="${y1}" width="${bw}" height="${alto}" fill="${col}" rx="1"/></g>`;
-    if ((n - 1 - i) % cada === 0) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="${fs}" fill="#5B6573">${etiqueta(b[0])}</text>`;
+    if ((n - 1 - i) % cada === 0) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="${fs}" style="fill:var(--suave)">${etiqueta(b[0])}</text>`;
   });
   const ult = bars[n - 1][4];
-  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ult)}" y2="${Y(ult)}" stroke="#1F3A5F" stroke-dasharray="4 4"/>`;
+  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ult)}" y2="${Y(ult)}" style="stroke:var(--enlace)" stroke-dasharray="4 4"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfico de velas">${g}</svg>`;
 }
 function infoVela(i) {
@@ -769,7 +835,7 @@ function pantallaBienvenida(noGuarda) {
     <div class="chips" style="margin-bottom:10px">${[100, 200, 500].map(v => `<button class="chip" aria-pressed="${simInicial === v}" onclick="simInicial=${v};pintar()">${usd(v)}</button>`).join("")}</div>
     <p class="chica" style="margin:4px 0 6px">O escribe otro monto (en dólares):</p>
     <input id="montoini" type="number" inputmode="decimal" min="1" value="${simInicial}" onchange="simInicial=Math.max(1,+this.value||1);pintar()">
-    <button class="volver ancho" style="margin-top:16px;background:var(--verde)" onclick="abrirCuenta()">Empezar con ${usd(simInicial)}</button></div>
+    <button class="volver ancho" style="margin-top:16px;background:var(--verde-btn)" onclick="abrirCuenta()">Empezar con ${usd(simInicial)}</button></div>
   ${traerCuenta(false)}${pie()}`;
 }
 function traerCuenta(conCodigo) {
@@ -808,7 +874,7 @@ function panelTrade(c) {
     : "Todavía no tienes dinero puesto en este fondo, así que no hay nada que vender."}</div>`;
   const m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
   const opciones = [[0.25, "Un cuarto"], [0.5, "La mitad"], [1, compra ? "Todo mi efectivo" : "Todo"]];
-  return `<div class="tarjeta" style="border:3px solid ${compra ? "var(--verde)" : "var(--rojo)"}">
+  return `<div class="tarjeta" style="border:3px solid ${compra ? "var(--verde-btn)" : "var(--rojo-btn)"}">
     <h3>${compra ? "Comprar" : "Vender"}: ${ACT[t]}</h3>
     <p>${compra ? `¿Cuánto de tu efectivo quieres poner aquí? Tienes <b>${usd(max, 2)}</b> disponibles.`
                 : `¿Cuánto quieres sacar de aquí? Tienes <b>${usd(max, 2)}</b> en este fondo.`}</p>
@@ -816,7 +882,7 @@ function panelTrade(c) {
       `<button class="chip" aria-pressed="${Math.abs(m - max * f) < 0.005}" onclick="trade.monto=${(max * f).toFixed(4)};pintar()">${txt} (${usd(max * f, 2)})</button>`).join("")}</div>
     <p class="chica" style="margin:4px 0 6px">O escribe el monto en dólares:</p>
     <input type="number" inputmode="decimal" min="0.5" step="0.01" value="${m.toFixed(2)}" onchange="trade.monto=Math.min(${max.toFixed(4)},Math.max(0.5,+this.value||0.5));pintar()">
-    <button class="volver ancho" style="margin-top:14px;background:${compra ? "var(--verde)" : "var(--rojo)"}" onclick="ejecutarTrade()">Sí, ${compra ? "comprar" : "vender"} ${usd(m, 2)}</button>
+    <button class="volver ancho" style="margin-top:14px;background:${compra ? "var(--verde-btn)" : "var(--rojo-btn)"}" onclick="ejecutarTrade()">Sí, ${compra ? "comprar" : "vender"} ${usd(m, 2)}</button>
     <button class="chip ancho" style="margin-top:8px" onclick="trade=null;pintar()">No, cancelar</button>
     <p class="chica" style="margin:10px 0 0">Se usa el último precio (${usd(ultimo(t).precio, 2)}) y se cobra una pequeña comisión de 0.10%, como en la vida real${m >= 10 ? ` (unos ${usd(m * COSTO_OP, 2)})` : ""}.</p></div>`;
 }
@@ -870,7 +936,7 @@ function simulador() {
   <h1>Mi simulador</h1><p class="sub">Dinero de mentira · precios de verdad</p>${noGuarda}${msg}${AUTO_AVISO}${cambio}
 
   <div class="banner"><span class="chica">Todo mi dinero de práctica vale hoy</span>
-    <b style="font-size:40px;margin:4px 0">${usd(total, 2)}</b>
+    <b style="font-size:40px;margin:4px 0">${usd(total, 2)}</b>${enSoles(total)}
     <span>Empecé con ${usd(c.inicial, 2)} → ${gan >= 0 ? "voy ganando" : "voy perdiendo"} <b>${usd(Math.abs(gan), 2)} (${pct(gan / c.inicial)})</b></span>
     ${c.auto && c.sigue != null ? `<span class="chica" style="display:block;margin-top:8px">🤖 Mi dinero lo maneja el robot «${esc(R[c.sigue].nombre)}»</span>` : ""}</div>
   <div class="grid2" style="grid-template-columns:1fr 1fr">
@@ -898,8 +964,8 @@ function simulador() {
 
   <h2>Paso 3 · Compra o vende</h2>
   <div class="grid2" style="grid-template-columns:1fr 1fr">
-    <button class="boton" style="justify-content:center;text-align:center;background:var(--verde);border-color:var(--verde);color:#fff;min-height:84px" onclick="abrirTrade('comprar')"><span><b style="color:#fff;font-size:24px">Comprar</b><span style="color:#E3F2E8">poner efectivo aquí</span></span></button>
-    <button class="boton" style="justify-content:center;text-align:center;background:var(--rojo);border-color:var(--rojo);color:#fff;min-height:84px" onclick="abrirTrade('vender')"><span><b style="color:#fff;font-size:24px">Vender</b><span style="color:#FBE6E3">sacar dinero de aquí</span></span></button>
+    <button class="boton" style="justify-content:center;text-align:center;background:var(--verde-btn);border-color:var(--verde-btn);color:#fff;min-height:84px" onclick="abrirTrade('comprar')"><span><b style="color:#fff;font-size:24px">Comprar</b><span style="color:#E3F2E8">poner efectivo aquí</span></span></button>
+    <button class="boton" style="justify-content:center;text-align:center;background:var(--rojo-btn);border-color:var(--rojo-btn);color:#fff;min-height:84px" onclick="abrirTrade('vender')"><span><b style="color:#fff;font-size:24px">Vender</b><span style="color:#FBE6E3">sacar dinero de aquí</span></span></button>
   </div>
   ${trade && trade.t === t ? panelTrade(c) : ""}
 
@@ -929,14 +995,14 @@ function simulador() {
     ${ficha(simRobot)}
     <p style="margin-top:12px"><b>Hoy este robot tiene:</b> ${esc(tiene(rb.pesos))}</p>
     <p style="margin:14px 0 6px"><b>Tienes dos formas de usarlo:</b></p>
-    <button class="volver ancho" style="background:var(--verde)" onclick="copiarRobot(${simRobot}, true)">🤖 Que este robot maneje mi dinero</button>
+    <button class="volver ancho" style="background:var(--verde-btn)" onclick="copiarRobot(${simRobot}, true)">🤖 Que este robot maneje mi dinero</button>
     <p class="chica" style="margin:6px 0 14px">El robot decide por ti. Cuando cambie de idea, tu dinero se acomoda solo (al abrir el simulador). Si compras o vendes tú, se apaga.</p>
     <button class="volver ancho" onclick="copiarRobot(${simRobot}, false)">📋 Copiarlo solo una vez</button>
     <p class="chica" style="margin:6px 0 0">Tu dinero queda repartido como el suyo hoy, y después decides tú.</p></div>
 
   <h2>Lo que he hecho</h2><div class="tarjeta"><ul class="lista">${ops}</ul></div>
   ${traerCuenta(true)}
-  <button class="chip ancho" style="margin-top:20px;color:var(--rojo);border-color:#F2BDB6" onclick="reiniciar()">Empezar de nuevo (borrar mi juego)</button>
+  <button class="chip ancho" style="margin-top:20px;color:var(--rojo);border-color:var(--s-rojo)" onclick="reiniciar()">Empezar de nuevo (borrar mi juego)</button>
   ${pie()}`;
 }
 
@@ -964,12 +1030,76 @@ function ayuda() {
   ${pie()}`;
 }
 
+/* ---------- ajustes (se guardan en este aparato) ---------- */
+const CLAVE_AJ = "trading-ajustes-v1";
+let AJ = {tema: "auto", letra: 1, soles: false};
+try { Object.assign(AJ, JSON.parse(localStorage.getItem(CLAVE_AJ) || "{}")); } catch (e) {}
+const mqOscuro = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+function aplicarAjustes() {
+  const oscuro = AJ.tema === "oscuro" || (AJ.tema === "auto" && mqOscuro && mqOscuro.matches);
+  document.documentElement.dataset.tema = oscuro ? "oscuro" : "claro";
+  HEX = (oscuro ? HEX_OSCURO : HEX_CLARO).slice();
+  document.querySelector('meta[name=theme-color]').content = oscuro ? "#0D1117" : "#F4F5F7";
+  document.body.style.zoom = AJ.letra;
+}
+function guardarAj(cambio) { Object.assign(AJ, cambio); try { localStorage.setItem(CLAVE_AJ, JSON.stringify(AJ)); } catch (e) {} aplicarAjustes(); pintar(); }
+if (mqOscuro && mqOscuro.addEventListener) mqOscuro.addEventListener("change", () => { if (AJ.tema === "auto") { aplicarAjustes(); if (D) pintar(); } });
+aplicarAjustes();
+function recargarDatos() {
+  const b = document.getElementById("btnRecargar"); if (b) { b.disabled = true; b.textContent = "Actualizando…"; }
+  Promise.all([fetch("data.json?v=" + Date.now(), {cache: "no-store"}).then(r => r.json()),
+               fetch("velas.json?v=" + Date.now(), {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)])
+    .then(([d, v]) => { D = d; if (v && v.velas) { VELAS = v.velas; VELAS_ACT = v.actualizado; } simMsg = ""; pintar(); alert("Listo: datos actualizados."); })
+    .catch(() => { alert("No se pudo actualizar. Revisa tu conexión a internet."); pintar(); });
+}
+function borrarTodo() {
+  if (!confirm("¿Borrar TODO lo guardado en este aparato?\n\nSe borrará tu juego del simulador y tus ajustes. Los datos del mercado se volverán a descargar.")) return;
+  try { localStorage.clear(); } catch (e) {}
+  const fin = () => location.reload();
+  if (window.caches) caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(fin, fin); else fin();
+}
+function ajustes() {
+  const op = (campo, valor, txt) => `<button class="chip" aria-pressed="${AJ[campo] === valor}" onclick="guardarAj({${campo}: ${typeof valor === "string" ? `'${valor}'` : valor}})">${txt}</button>`;
+  const fechaHora = iso => { if (!iso) return "—"; const d = new Date(iso); return d.toLocaleString("es-PE", {timeZone: "America/Lima", day: "numeric", month: "short", hour: "numeric", minute: "2-digit"}); };
+  return `${barra()}
+  <h1>Ajustes</h1><p class="sub">Se guardan solo en este celular o computadora</p>
+  <h2>Apariencia</h2>
+  <div class="tarjeta"><p style="margin:0 0 10px"><b>Modo de pantalla</b></p>
+    <div class="chips">${op("tema", "auto", "Automático")}${op("tema", "claro", "☀️ Claro")}${op("tema", "oscuro", "🌙 Oscuro")}</div>
+    <p class="chica" style="margin:10px 0 0">«Automático» usa el mismo modo que tu celular. El modo oscuro cansa menos la vista de noche.</p></div>
+  <div class="tarjeta"><p style="margin:0 0 10px"><b>Tamaño de letra</b></p>
+    <div class="chips">${op("letra", 1, "Normal")}${op("letra", 1.12, "Grande")}${op("letra", 1.25, "Muy grande")}</div></div>
+  <h2>Montos</h2>
+  <div class="tarjeta"><div class="ajuste" style="border:0;padding:0">
+    <span><b>Mostrar también en soles</b><span class="chica" style="display:block">Junto a los dólares verás cuánto es en soles, con el cambio de hoy (S/ ${D.mercado.tipo_cambio.toFixed(2)}).</span></span>
+    <button class="interruptor" role="switch" aria-checked="${AJ.soles}" aria-label="Mostrar también en soles" onclick="guardarAj({soles: ${!AJ.soles}})"></button></div></div>
+  <h2>Datos</h2>
+  <div class="tarjeta"><ul class="lista">
+    <li><b>Precios de cierre</b><br><span class="chica">Del ${fecha(D.fecha_precios)} · se actualizan solos de lunes a viernes a las 5:30 p.m.</span></li>
+    <li><b>Velas durante el día</b><br><span class="chica">Última descarga: ${fechaHora(VELAS_ACT)} · cada hora mientras la bolsa está abierta</span></li>
+    <li><b>Fuente</b><br><span class="chica">Yahoo Finance (precios de la bolsa de Nueva York)</span></li></ul>
+    <button id="btnRecargar" class="volver ancho" style="margin-top:12px" onclick="recargarDatos()">Actualizar ahora</button></div>
+  <h2>Avanzado</h2>
+  <div class="tarjeta">
+    <button class="chip ancho" onclick="ir('simulador')">Ir a mi simulador</button>
+    <button class="chip ancho" style="margin-top:10px;color:var(--rojo);border-color:var(--s-rojo)" onclick="borrarTodo()">Borrar todo lo guardado en este aparato</button>
+    <p class="chica" style="margin:12px 0 0">Úsalo solo si la app se comporta raro. Borra tu juego del simulador y tus ajustes.</p></div>
+  <p class="chica" style="text-align:center;margin-top:20px">Trading Algorítmico · versión 1.0</p>
+  ${pie()}`;
+}
+const NAV = [["", "inicio", "Inicio"], ["mercado", "mercado", "Mercado"], ["simulador", "simulador", "Simulador"], ["robots", "robots", "Robots"], ["ajustes", "ajustes", "Ajustes"]];
+function pintarNav(r) {
+  document.querySelector("#nav .in").innerHTML = NAV.map(([ruta, ic, txt]) =>
+    `<button onclick="ir('${ruta}')" ${r === ruta ? 'aria-current="page"' : ""}>${icono(ic)}<span>${txt}</span></button>`).join("");
+}
+
 /* ---------- navegación ---------- */
-const PANTALLAS = {"": inicio, mercado, simulador, robots, historia, calculadora, ayuda};
+const PANTALLAS = {"": inicio, mercado, simulador, robots, historia, calculadora, ayuda, ajustes};
 function ir(r) { location.hash = r ? "#" + r : "#"; }
 function pintar(conScroll = false) {
   const r = location.hash.replace("#", "");
   $app.innerHTML = (PANTALLAS[r] || inicio)();
+  pintarNav(PANTALLAS[r] ? r : "");
   if (conScroll) window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", () => pintar(true));
