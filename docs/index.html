@@ -93,6 +93,7 @@ svg text{font-family:inherit}
 .pasos div{display:flex;gap:14px;align-items:flex-start;margin:12px 0}
 .pasos span{flex:0 0 40px;height:40px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}
 .pasos p{margin:6px 0 0}
+.ficha p{margin:0 0 12px}
 label.campo{display:block;font-weight:700;margin:16px 0 8px}
 select,input[type=number]{width:100%;min-height:58px;border:2px solid var(--borde);border-radius:14px;padding:10px 14px;background:#fff;font-size:20px}
 .barras .b{margin:10px 0}
@@ -247,6 +248,57 @@ function mercado() {
   <div class="grid2">${cards}</div>${pie()}`;
 }
 
+/* ---------- fichas de los robots, en palabras sencillas ---------- */
+const FICHAS = [
+  {emoji: "🛋️", idea: "Compra una sola vez y nunca vende. Es como comprar un terreno y esperar años sin tocarlo.",
+   decide: "Nunca. Compra el primer día y ya.", donde: "Siempre 100% en acciones de EE. UU.",
+   bien: "Cuando la bolsa sube durante años, porque está siempre invertido.",
+   mal: "En las crisis: cae todo lo que cae la bolsa, sin ninguna protección.",
+   porque: "Es la <b>vara de medir</b>. Si un robot no le gana a «no hacer nada», no vale la pena."},
+  {emoji: "⚖️", idea: "No pone todos los huevos en la misma canasta: 60% en acciones (para crecer) y 40% en bonos (para amortiguar golpes).",
+   decide: "Una vez al mes, solo para volver a dejar 60% y 40% si los precios lo movieron.", donde: "60% acciones de EE. UU. + 40% bonos del gobierno de EE. UU.",
+   bien: "En las crisis: cae bastante menos que la bolsa.",
+   mal: "En los años buenos gana menos, porque una parte está en bonos.",
+   porque: "Es la forma clásica en que invierten muchos fondos de jubilación."},
+  {emoji: "🏄", idea: "Como un surfista: se sube a la ola cuando el mercado viene subiendo y se baja cuando empieza a bajar.",
+   decide: "Revisa todos los días, pero cambia pocas veces al año. Compara el precio promedio de los últimos 3 meses con el del último año: si el de 3 meses está más alto, compra; si no, vende y guarda el efectivo.",
+   donde: "O 100% acciones de EE. UU., o 100% en efectivo.",
+   bien: "En caídas largas y lentas, como la de 2008: se salió a tiempo.",
+   mal: "En caídas muy rápidas, como la del COVID en 2020: reacciona tarde y se come la caída.",
+   porque: "Busca evitar las grandes caídas, aunque a veces se pierda parte de las subidas."},
+  {emoji: "📅", idea: "Una vez al mes se hace una sola pregunta: ¿las acciones están más caras que su promedio del último año? Si sí, invierte en acciones. Si no, se refugia en bonos.",
+   decide: "Solo el último día de cada mes.", donde: "O 100% acciones de EE. UU., o 100% bonos del gobierno de EE. UU.",
+   bien: "Cuando las acciones caen por meses y los bonos suben, como en 2008.",
+   mal: "Cuando acciones y bonos caen juntos, como en 2022: el refugio no sirvió.",
+   porque: "Es una versión tranquila de «seguir la tendencia»: decide poco y no se asusta por un mal día."},
+  {emoji: "🏆", idea: "Apuesta por el equipo que va primero en la tabla. Cada mes mira quién subió más en el último año: las acciones de EE. UU. o las del resto del mundo, y pone todo ahí.",
+   decide: "El último día de cada mes. Si ninguno de los dos subió más que guardar el dinero, se va a bonos.",
+   donde: "100% en uno solo: acciones de EE. UU., acciones del mundo o bonos.",
+   bien: "Cuando un mismo mercado lidera durante años.",
+   mal: "Cuando el líder cambia rápido: siempre llega tarde al cambio.",
+   porque: "Se basa en una idea muy estudiada: lo que viene subiendo con fuerza suele seguir subiendo un tiempo."},
+  {emoji: "🛒", idea: "Espera las ofertas. Solo compra cuando las acciones caen fuerte dos o tres días seguidos (pero la tendencia de fondo es buena), y vende apenas rebotan.",
+   decide: "Revisa todos los días. Cada compra dura pocos días.", donde: "Casi siempre en efectivo; a ratos, 100% acciones de EE. UU.",
+   bien: "Arriesga muy poco: casi nunca está invertido.",
+   mal: "Por lo mismo, gana poco: se pierde la mayoría de las subidas.",
+   porque: "Prueba la idea de «comprar barato después de un mal día»."},
+];
+function ficha(i, sinIdea) {
+  const f = FICHAS[i], crisis = (D.historia.crisis || []).map(c => {
+    const x = c.robots[i]; return x ? `<li>${esc(c.titulo)}: <b class="${clase(x.cambio)}" style="background:none">${pct(x.cambio, 0)}</b></li>` : ""; }).join("");
+  return `<div class="ficha">
+    ${sinIdea ? "" : `<p style="font-size:20px">${f.idea}</p>`}
+    <p><b>🕐 ¿Cuándo decide?</b><br>${f.decide}</p>
+    <p><b>💼 ¿Dónde pone el dinero?</b><br>${f.donde}</p>
+    <p><b>👍 Le va bien:</b> ${f.bien}<br><b>👎 Le va mal:</b> ${f.mal}</p>
+    <p><b>🤔 ¿Por qué está aquí?</b> ${f.porque}</p>
+    ${crisis ? `<p style="margin-bottom:4px"><b>📜 Lo que le pasó en las crisis:</b></p><ul style="margin:0 0 12px;padding-left:22px">${crisis}</ul>` : ""}
+    <p class="chica" style="margin:0"><b>¿Qué puedes controlar tú?</b> Sus reglas no se cambian: así podemos medir si funcionan. Lo que tú decides es si lo copias en tu simulador.</p></div>`;
+}
+const QUE_ES_ROBOT = `<div class="aviso"><b>¿Qué es un "robot" aquí?</b><br>
+  No es una máquina: es una <b>receta de reglas fijas</b> que la computadora sigue al pie de la letra, sin miedo ni emoción.
+  Cada robot recibió ${"US$"} 10,000 de mentira y los invierte según su receta, con precios reales. Así vemos cuál receta funciona mejor.</div>`;
+
 function robots() {
   const R = D.robots, ini = R.capital;
   const lista = R.robots.slice();
@@ -263,11 +315,11 @@ function robots() {
     const c = r.valor - ini;
     return `<div class="tarjeta robot" onclick="this.querySelector('.larga').classList.toggle('oculto')" role="button" tabindex="0">
       <div class="cab"><span class="punto" style="background:${HEX[i]}"></span><h3 style="margin:0">${esc(r.nombre)}</h3>${i === 0 ? '<span class="ref">REFERENCIA</span>' : ""}</div>
-      <p class="chica" style="margin:4px 0 8px">${esc(r.corta)}</p>
+      <p style="margin:6px 0 8px">${FICHAS[i].emoji} ${FICHAS[i].idea}</p>
       <div class="fila"><span class="grande">${usd(r.valor)}</span><span class="pill ${clase(c / ini)}">${flecha(c / ini)} ${pct(c / ini)}</span></div>
       <p style="margin:8px 0 0"><b>Ahora tiene:</b> ${esc(tiene(r.pesos))}</p>
-      <p class="larga oculto" style="margin:10px 0 0">${esc(r.larga)}</p>
-      <div class="mas">Toca para saber cómo piensa</div></div>`;
+      <div class="larga oculto" style="margin-top:12px;border-top:1px solid var(--borde);padding-top:12px">${ficha(i, true)}</div>
+      <div class="mas">Toca para conocerlo mejor ▾</div></div>`;
   }).join("");
   const ops = R.operaciones.slice(0, 15).map(o =>
     `<li><span class="chica">${fecha(o.fecha)}</span><br><b>${esc(o.robot)}</b> <span class="${o.accion === "compró" ? "sube" : "baja"}" style="font-weight:700">${o.accion}</span> ${esc(ACT[o.activo] || o.activo)} por ${usd(o.monto)}</li>`).join("")
@@ -275,7 +327,7 @@ function robots() {
   return `${barra()}
   <h1>Competencia de robots</h1>
   <p class="sub">Cada robot empezó el ${fecha(R.inicio)} con ${usd(ini)} de mentira · ${R.dias} día${R.dias === 1 ? "" : "s"} de bolsa</p>
-  <div class="banner"><b>${esc(titular)}</b>${R.dias < 60 ? '<span class="chica">Aún es muy pronto: con menos de 3 meses, ganar o perder es casi pura suerte.</span>' : ""}</div>
+  ${QUE_ES_ROBOT}<div class="banner"><b>${esc(titular)}</b>${R.dias < 60 ? '<span class="chica">Aún es muy pronto: con menos de 3 meses, ganar o perder es casi pura suerte.</span>' : ""}</div>
   <div class="tarjeta"><h3>Así va cada robot</h3>
     ${grafico(series, {alto: 250, base: ini, etiquetasX: etiq})}
     ${leyenda(lista.map(r => r.nombre))}
@@ -403,7 +455,7 @@ const QUE_ES = {
 const INTERVALOS = [["15m", "Cada 15 minutos"], ["1h", "Cada hora"], ["1d", "Cada día"], ["1wk", "Cada semana"]];
 const COSTO_OP = 0.001;
 const almacenOK = (() => { try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); return true; } catch (e) { return false; } })();
-let CUENTA = null, VELAS = null, simInicial = 100, simFondo = "SPY", simIntervalo = "15m", simRobot = 1, trade = null, simMsg = "";
+let AUTO_AVISO = "", CUENTA = null, VELAS = null, simInicial = 100, simFondo = "SPY", simIntervalo = "15m", simRobot = 1, trade = null, simMsg = "";
 
 fetch("velas.json?v=" + Date.now(), {cache: "no-store"}).then(r => r.ok ? r.json() : null)
   .then(v => { VELAS = v && v.velas ? v.velas : null; if (D && location.hash === "#simulador") pintar(); }).catch(() => {});
@@ -474,15 +526,40 @@ function reiniciar() {
   try { localStorage.removeItem(CLAVE); } catch (e) {}
   CUENTA = null; trade = null; pintar(true);
 }
-function copiarRobot(i) {
-  const rb = D.robots.robots[i], c = cuenta();
-  if (!confirm(`¿Repartir tu dinero igual que el robot "${rb.nombre}"?\n\nHoy el robot tiene: ${tiene(rb.pesos)}.`)) return;
-  const p = precios(), total = valorCuenta(c), w = rb.pesos || {};
+function aplicarRobot(c, i) {
+  const w = D.robots.robots[i].pesos || {}, p = precios(), total = valorCuenta(c);
   ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total; if (act - quiere > 0.5) vender(c, t, act - quiere, quiere < 0.5); });
   ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total; if (quiere - act > 0.5) comprar(c, t, quiere - act); });
-  c.sigue = i; trade = null; anotarValor(c); guardar(c);
-  simMsg = `Listo: tu dinero quedó repartido igual que el del robot «${rb.nombre}».`;
+}
+function difiere(c, i) { const w = pesosCuenta(c), wr = D.robots.robots[i].pesos || {}; return ORDEN.some(k => Math.abs((w[k] || 0) - (wr[k] || 0)) > 0.05); }
+function copiarRobot(i, auto) {
+  const rb = D.robots.robots[i], c = cuenta();
+  const txt = auto
+    ? `¿Dejar que el robot «${rb.nombre}» maneje tu dinero?\n\nAhora mismo tu dinero quedará repartido como el suyo (${tiene(rb.pesos)}). Y cada vez que abras el simulador, si el robot cambió de idea, tu dinero se acomodará solo.\n\nPuedes apagarlo cuando quieras.`
+    : `¿Repartir tu dinero igual que el robot «${rb.nombre}», solo por esta vez?\n\nHoy el robot tiene: ${tiene(rb.pesos)}.\nDespués tú sigues decidiendo.`;
+  if (!confirm(txt)) return;
+  aplicarRobot(c, i); AUTO_AVISO = "";
+  c.sigue = i; c.auto = !!auto; trade = null; anotarValor(c); guardar(c);
+  simMsg = auto ? `Listo: el robot «${rb.nombre}» ahora maneja tu dinero. Tú solo mira cómo le va.`
+                : `Listo: tu dinero quedó repartido igual que el del robot «${rb.nombre}». Desde ahora decides tú.`;
   pintar(true);
+}
+function apagarAuto() { AUTO_AVISO = ""; const c = cuenta(); c.auto = false; guardar(c); simMsg = "Listo: el robot ya no maneja tu dinero. Ahora decides tú."; pintar(); }
+function comparativa(c) {
+  const R = D.robots.robots, desde = c.inicio, mio = valorCuenta(c) / c.inicial - 1;
+  const filas = R.map((r, i) => {
+    const s = r.serie, k = s.findIndex(x => x[0] >= desde);
+    const g = k < 0 ? 0 : s[s.length - 1][1] / s[k][1] - 1;
+    return {nombre: `${FICHAS[i].emoji} ${r.nombre}`, g, yo: false};
+  });
+  filas.push({nombre: "🙋 Yo", g: mio, yo: true});
+  filas.sort((a, b) => (b.g - a.g) || (b.yo - a.yo));
+  const med = ["🥇", "🥈", "🥉"];
+  return `<div class="tarjeta"><ul class="lista">${filas.map((f, j) => `<li style="${f.yo ? "background:#EEF2F7;margin:0 -18px;padding:12px 18px" : ""}">
+      <div class="fila" style="justify-content:space-between"><b>${med[j] || (j + 1) + "."} ${f.nombre}</b>
+      <b class="${clase(f.g)}" style="background:none;font-size:20px">${pct(f.g, 2)}</b></div>
+      <div class="chica">Con tus ${usd(c.inicial, 2)} ${f.yo ? "tienes hoy" : "este robot tendría"} ${usd(c.inicial * (1 + f.g), 2)}</div></li>`).join("")}</ul>
+    <p class="chica" style="margin:8px 0 0">Comparado desde el ${fecha(desde)}, el día que empezaste. Los robots se miden con el último cierre de la bolsa.</p></div>`;
 }
 function abrirTrade(tipo) { trade = (trade && trade.tipo === tipo && trade.t === simFondo) ? null : {t: simFondo, tipo, monto: null}; pintar(); }
 function maxTrade(c, t, tipo) { return tipo === "comprar" ? c.efectivo / (1 + COSTO_OP) : (c.pos[t] || 0) * ultimo(t).precio; }
@@ -491,10 +568,10 @@ function ejecutarTrade() {
   let m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
   if (m < 0.5) return;
   m = tipo === "comprar" ? comprar(c, t, m) : vender(c, t, m, m >= max - 0.01);
-  c.sigue = null; trade = null; anotarValor(c); guardar(c);
-  simMsg = tipo === "comprar"
+  AUTO_AVISO = ""; const eraAuto = c.auto; c.sigue = null; c.auto = false; trade = null; anotarValor(c); guardar(c);
+  simMsg = (eraAuto ? "Como decidiste tú, el robot dejó de manejar tu dinero. " : "") + (tipo === "comprar"
     ? `Listo: pusiste ${usd(m, 2)} en ${ACT[t]}. Desde ahora, si su precio sube, ese dinero crece; si baja, se achica.`
-    : `Listo: sacaste ${usd(m, 2)} de ${ACT[t]}. Ese dinero volvió a tu efectivo y ya no se mueve con el precio.`;
+    : `Listo: sacaste ${usd(m, 2)} de ${ACT[t]}. Ese dinero volvió a tu efectivo y ya no se mueve con el precio.`);
   pintar(true);
 }
 
@@ -633,17 +710,21 @@ function simulador() {
   simMsg = "";
   if (!c) return pantallaBienvenida(noGuarda);
 
+  if (c.auto && c.sigue != null && D.robots.robots[c.sigue] && difiere(c, c.sigue)) {
+    aplicarRobot(c, c.sigue);
+    AUTO_AVISO = `<div class="aviso oro"><b>🤖 El robot «${esc(D.robots.robots[c.sigue].nombre)}» hizo cambios en tu dinero.</b><br>Ahora tienes: ${esc(tiene(pesosCuenta(c)))}. Mira el detalle en «Lo que he hecho».</div>`;
+  }
   anotarValor(c); guardar(c);
   const p = precios(), total = valorCuenta(c), gan = total - c.inicial, invertido = total - c.efectivo;
   const R = D.robots.robots, t = simFondo, u = ultimo(t), abierta = bolsaAbierta();
 
   // aviso si el robot copiado cambió de idea
   let cambio = "";
-  if (c.sigue != null && R[c.sigue]) {
-    const w = pesosCuenta(c), wr = R[c.sigue].pesos || {};
-    if (ORDEN.some(k => Math.abs((w[k] || 0) - (wr[k] || 0)) > 0.05))
+  if (!c.auto && c.sigue != null && R[c.sigue]) {
+    const wr = R[c.sigue].pesos || {};
+    if (difiere(c, c.sigue))
       cambio = `<div class="aviso oro"><b>El robot «${esc(R[c.sigue].nombre)}» cambió de idea.</b><br>Ahora tiene: ${esc(tiene(wr))}.
-        <button class="volver ancho" style="margin-top:10px;background:var(--dorado)" onclick="copiarRobot(${c.sigue})">Volver a copiarlo</button></div>`;
+        <button class="volver ancho" style="margin-top:10px;background:var(--dorado)" onclick="copiarRobot(${c.sigue}, false)">Volver a copiarlo</button></div>`;
   }
 
   // gráfico de velas
@@ -668,11 +749,12 @@ function simulador() {
     || "<li>Todavía no has comprado ni vendido nada.</li>";
 
   return `${barra()}
-  <h1>Mi simulador</h1><p class="sub">Dinero de mentira · precios de verdad</p>${noGuarda}${msg}${cambio}
+  <h1>Mi simulador</h1><p class="sub">Dinero de mentira · precios de verdad</p>${noGuarda}${msg}${AUTO_AVISO}${cambio}
 
   <div class="banner"><span class="chica">Todo mi dinero de práctica vale hoy</span>
     <b style="font-size:40px;margin:4px 0">${usd(total, 2)}</b>
-    <span>Empecé con ${usd(c.inicial, 2)} → ${gan >= 0 ? "voy ganando" : "voy perdiendo"} <b>${usd(Math.abs(gan), 2)} (${pct(gan / c.inicial)})</b></span></div>
+    <span>Empecé con ${usd(c.inicial, 2)} → ${gan >= 0 ? "voy ganando" : "voy perdiendo"} <b>${usd(Math.abs(gan), 2)} (${pct(gan / c.inicial)})</b></span>
+    ${c.auto && c.sigue != null ? `<span class="chica" style="display:block;margin-top:8px">🤖 Mi dinero lo maneja el robot «${esc(R[c.sigue].nombre)}»</span>` : ""}</div>
   <div class="grid2" style="grid-template-columns:1fr 1fr">
     <div class="tarjeta" style="margin:0"><span class="chica">💵 Efectivo<br>(guardado, no se mueve)</span><div class="grande" style="font-size:26px">${usd(c.efectivo, 2)}</div></div>
     <div class="tarjeta" style="margin:0"><span class="chica">📦 Invertido<br>(sube y baja con el precio)</span><div class="grande" style="font-size:26px">${usd(invertido, 2)}</div></div>
@@ -705,12 +787,24 @@ function simulador() {
   <h2>Lo que tengo invertido</h2>
   <div class="tarjeta"><ul class="lista">${misFondos || "<li>Todavía no tienes nada invertido. Todo está en efectivo.</li>"}</ul></div>
 
-  <h2>¿No sabes qué hacer? Copia a un robot</h2>
-  <p>Si prefieres no decidir tú, elige un robot y tu dinero quedará repartido igual que el suyo.</p>
-  <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};pintar()">${esc(r.nombre)}</button>`).join("")}</div>
-  <div class="tarjeta"><h3>${esc(rb.nombre)}</h3><p class="chica">${esc(rb.corta)}</p>
-    <p><b>Hoy tiene:</b> ${esc(tiene(rb.pesos))}</p>
-    <button class="volver ancho" onclick="copiarRobot(${simRobot})">Repartir mi dinero igual que este robot</button></div>
+  <h2>🏁 ¿Cómo me va comparado con los robots?</h2>
+  <p>Aquí ves si tus decisiones le están ganando a los robots, como si cada robot hubiera empezado el mismo día que tú y con tu mismo dinero.</p>
+  ${comparativa(c)}
+
+  <h2>🤖 ¿No sabes qué hacer? Deja que un robot decida</h2>
+  ${c.auto && c.sigue != null ? `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>Ahora tu dinero lo maneja «${esc(R[c.sigue].nombre)}».</b><br>
+     Cada vez que abras el simulador, si el robot cambió de idea, tu dinero se acomoda solo.
+     <button class="chip ancho" style="margin-top:10px" onclick="apagarAuto()">Apagar: quiero decidir yo</button></div>` : ""}
+  <p>Primero elige un robot. Toca su nombre para conocerlo:</p>
+  <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};pintar()">${FICHAS[i].emoji} ${esc(r.nombre)}</button>`).join("")}</div>
+  <div class="tarjeta"><h3>${FICHAS[simRobot].emoji} ${esc(rb.nombre)}</h3>
+    ${ficha(simRobot)}
+    <p style="margin-top:12px"><b>Hoy este robot tiene:</b> ${esc(tiene(rb.pesos))}</p>
+    <p style="margin:14px 0 6px"><b>Tienes dos formas de usarlo:</b></p>
+    <button class="volver ancho" style="background:var(--verde)" onclick="copiarRobot(${simRobot}, true)">🤖 Que este robot maneje mi dinero</button>
+    <p class="chica" style="margin:6px 0 14px">El robot decide por ti. Cuando cambie de idea, tu dinero se acomoda solo (al abrir el simulador). Si compras o vendes tú, se apaga.</p>
+    <button class="volver ancho" onclick="copiarRobot(${simRobot}, false)">📋 Copiarlo solo una vez</button>
+    <p class="chica" style="margin:6px 0 0">Tu dinero queda repartido como el suyo hoy, y después decides tú.</p></div>
 
   <h2>Lo que he hecho</h2><div class="tarjeta"><ul class="lista">${ops}</ul></div>
   ${traerCuenta(true)}
@@ -728,7 +822,7 @@ function ayuda() {
   ${q("¿Qué es un robot?", "<p>Es una lista de reglas fijas que la computadora sigue al pie de la letra, por ejemplo: «si el mercado viene subiendo, compra; si viene bajando, guarda el dinero». No se asusta ni se emociona. A esto se le llama <b>trading algorítmico</b>.</p>")}
   ${q("¿Qué es una acción, un bono y un fondo?", "<p><b>Acción:</b> un pedacito de una empresa. Puede subir mucho, pero también caer mucho.</p><p><b>Bono:</b> un préstamo a un gobierno o empresa que paga intereses. Se mueve poco y sirve de refugio.</p><p><b>Fondo (ETF):</b> una canasta con cientos de acciones o bonos. Con una sola compra uno reparte el riesgo.</p>")}
   ${q("¿Qué significa el semáforo?", "<p>Resume en un color si las acciones de EE. UU. vienen subiendo (verde), dudando (amarillo) o cayendo (rojo). Describe el pasado reciente; no adivina el futuro.</p>")}
-  ${q("Los 6 robots, uno por uno", "<ul>" + D.robots.robots.map(r => `<li><b>${esc(r.nombre)}:</b> ${esc(r.corta)} ${esc(r.larga)}</li>`).join("") + "</ul>")}
+  ${D.robots.robots.map((r, i) => q(`${FICHAS[i].emoji} Robot «${esc(r.nombre)}»`, ficha(i))).join("\n  ")}
   ${q("¿Cada cuánto debemos mirarla?", "<p>Una vez por semana es suficiente. Los robots casi no hacen operaciones: la mayoría decide una sola vez al mes.</p>")}
   ${q("¿Cuándo podremos sacar conclusiones?", "<p>No antes de 3 meses, idealmente a los 6. Con pocas semanas, que un robot gane o pierda es casi pura suerte.</p>")}
   ${q("¿Entonces debemos invertir con un robot?", "<p>Todavía no. En la historia de 20 años, desde 2018 ningún robot le ganó a «Sin hacer nada». La práctica sirve justamente para comprobar con calma si alguno vale la pena antes de arriesgar dinero real. Cualquier decisión se conversa en familia, y no es una recomendación de inversión.</p>")}
