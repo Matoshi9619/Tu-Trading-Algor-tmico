@@ -1,0 +1,96 @@
+{
+ "inicio": "2026-10-07",
+ "ultima": "2026-10-07",
+ "historial": [
+  {
+   "fecha": "2026-10-07",
+   "0. Comprar y mantener SPY": 9990.01,
+   "1. Cartera 60/40": 9990.01,
+   "2. Cruce de medias 50/200": 9990.01,
+   "3. Filtro de tendencia": 9990.01,
+   "4. Rotación por momentum": 9990.01,
+   "5. Rebote de corto plazo RSI": 10000.0
+  }
+ ],
+ "operaciones": [
+  {
+   "fecha": "2026-10-07",
+   "robot": "0. Comprar y mantener SPY",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 9990.01
+  },
+  {
+   "fecha": "2026-10-07",
+   "robot": "1. Cartera 60/40",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 6000.0
+  },
+  {
+   "fecha": "2026-10-07",
+   "robot": "1. Cartera 60/40",
+   "activo": "IEF",
+   "accion": "compró",
+   "monto": 3990.01
+  },
+  {
+   "fecha": "2026-10-07",
+   "robot": "2. Cruce de medias 50/200",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 9990.01
+  },
+  {
+   "fecha": "2026-10-07",
+   "robot": "3. Filtro de tendencia",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 9990.01
+  },
+  {
+   "fecha": "2026-10-07",
+   "robot": "4. Rotación por momentum",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 9990.01
+  }
+ ],
+ "carteras": {
+  "0. Comprar y mantener SPY": {
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 12.853516850541503
+   }
+  },
+  "1. Cartera 60/40": {
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 7.719822220435226,
+    "IEF": 44.77623120503589
+   }
+  },
+  "2. Cruce de medias 50/200": {
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 12.853516850541503
+   }
+  },
+  "3. Filtro de tendencia": {
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 12.853516850541503
+   }
+  },
+  "4. Rotación por momentum": {
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 12.853516850541503
+   }
+  },
+  "5. Rebote de corto plazo RSI": {
+   "efectivo": 10000.0,
+   "pos": {}
+  }
+ }
+}
