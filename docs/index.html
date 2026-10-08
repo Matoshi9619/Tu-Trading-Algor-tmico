@@ -88,6 +88,8 @@ svg text{font-family:inherit}
 .chips{display:flex;flex-wrap:wrap;gap:10px}
 .chip{border:2px solid var(--borde);background:var(--tarjeta);border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;min-height:52px;font-size:18px}
 .chip[aria-pressed=true]{background:var(--azul);border-color:var(--azul);color:#fff}
+.chip:disabled{opacity:.35;cursor:default}
+.ancho{width:100%;justify-content:center}
 label.campo{display:block;font-weight:700;margin:16px 0 8px}
 select,input[type=number]{width:100%;min-height:58px;border:2px solid var(--borde);border-radius:14px;padding:10px 14px;background:#fff;font-size:20px}
 .barras .b{margin:10px 0}
@@ -199,6 +201,7 @@ function inicio() {
   </button>
   <div class="botones">
     ${btn("mercado", "🚦", "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
+    ${btn("simulador", "💼", "Mi simulador", "Invierte dinero de práctica tú mismo")}
     ${btn("robots", "🤖", "Competencia de robots", "6 robots con US$ 10,000 de mentira")}
     ${btn("historia", "📜", "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
     ${btn("calculadora", "🧮", "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
@@ -384,6 +387,190 @@ function calculadora() {
   <p class="chica">Cálculo con precios de fin de mes, incluye un costo de 0.10% por operación. No incluye impuestos.</p>${pie()}`;
 }
 
+/* ---------- mi simulador (cuenta personal, guardada en este aparato) ---------- */
+const CLAVE = "nuestra-inversion-simulador-v1";
+const ORDEN = ["SPY", "EFA", "IEF", "SHY"];
+const COSTO_OP = 0.001;
+const almacenOK = (() => { try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); return true; } catch (e) { return false; } })();
+let CUENTA = null, simInicial = 10000, simRobot = 1, trade = null, simMsg = "";
+
+function cuenta() {
+  if (CUENTA) return CUENTA;
+  try { const s = localStorage.getItem(CLAVE); CUENTA = s ? JSON.parse(s) : null; } catch (e) { CUENTA = null; }
+  return CUENTA;
+}
+function guardar(c) { CUENTA = c; try { localStorage.setItem(CLAVE, JSON.stringify(c)); } catch (e) {} }
+function precios() { const p = {}; D.mercado.activos.forEach(a => p[a.ticker] = a.precio); return p; }
+function valorCuenta(c) { const p = precios(); return c.efectivo + Object.entries(c.pos).reduce((s, [t, u]) => s + u * p[t], 0); }
+function pesosCuenta(c) { const p = precios(), tot = valorCuenta(c), w = {}; ORDEN.forEach(t => w[t] = (c.pos[t] || 0) * p[t] / tot); return w; }
+function anotarValor(c) {
+  const f = D.fecha_precios, v = Math.round(valorCuenta(c) * 100) / 100, h = c.historial;
+  if (h.length && h[h.length - 1][0] === f) h[h.length - 1][1] = v; else h.push([f, v]);
+}
+function comprar(c, t, m) {
+  const p = precios(); m = Math.min(m, c.efectivo / (1 + COSTO_OP)); if (m < 1) return 0;
+  c.efectivo = Math.max(0, c.efectivo - m * (1 + COSTO_OP));
+  c.pos[t] = (c.pos[t] || 0) + m / p[t]; c.costo[t] = (c.costo[t] || 0) + m * (1 + COSTO_OP);
+  c.ops.unshift({f: D.fecha_precios, a: "compró", t, m: Math.round(m * 100) / 100}); return m;
+}
+function vender(c, t, m, todo) {
+  const p = precios(), tiene = c.pos[t] || 0; if (!tiene) return 0;
+  const u = todo ? tiene : Math.min(tiene, m / p[t]), frac = u / tiene;
+  c.efectivo += u * p[t] * (1 - COSTO_OP); c.costo[t] = (c.costo[t] || 0) * (1 - frac); c.pos[t] = tiene - u;
+  if (c.pos[t] * p[t] < 0.01) { delete c.pos[t]; delete c.costo[t]; }
+  c.ops.unshift({f: D.fecha_precios, a: "vendió", t, m: Math.round(u * p[t] * 100) / 100}); return u * p[t];
+}
+function abrirCuenta() {
+  const c = {inicial: simInicial, efectivo: simInicial, pos: {}, costo: {}, ops: [], historial: [], inicio: D.fecha_precios, sigue: null};
+  anotarValor(c); guardar(c);
+  simMsg = "¡Listo! Ya tienes " + usd(simInicial) + " de práctica. Ahora copia a un robot o compra por tu cuenta.";
+  pintar();
+}
+function reiniciar() {
+  if (!confirm("¿Borrar tu cuenta de práctica y empezar de nuevo? Se pierde todo lo que hiciste.")) return;
+  try { localStorage.removeItem(CLAVE); } catch (e) {}
+  CUENTA = null; trade = null; pintar(true);
+}
+function copiarRobot(i) {
+  const rb = D.robots.robots[i], c = cuenta();
+  if (!confirm(`¿Repartir tu dinero igual que el robot "${rb.nombre}"?\n\nHoy tiene: ${tiene(rb.pesos)}.\nSe venderá y comprará lo necesario a los precios de cierre del ${fecha(D.fecha_precios)}.`)) return;
+  const p = precios(), total = valorCuenta(c), w = rb.pesos || {};
+  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total;
+    if (act - quiere > 1) vender(c, t, act - quiere, quiere < 1); });
+  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total;
+    if (quiere - act > 1) comprar(c, t, quiere - act); });
+  c.sigue = i; trade = null; anotarValor(c); guardar(c);
+  simMsg = `Listo: tu dinero quedó repartido igual que "${rb.nombre}".`;
+  pintar(true);
+}
+function abrirTrade(t, tipo) { trade = (trade && trade.t === t && trade.tipo === tipo) ? null : {t, tipo, monto: null}; pintar(); }
+function maxTrade(c, t, tipo) { return tipo === "comprar" ? c.efectivo / (1 + COSTO_OP) : (c.pos[t] || 0) * precios()[t]; }
+function ejecutarTrade() {
+  const c = cuenta(), {t, tipo} = trade, max = maxTrade(c, t, tipo);
+  let m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
+  if (m < 1) return;
+  m = tipo === "comprar" ? comprar(c, t, m) : vender(c, t, m, m >= max - 0.01);
+  c.sigue = null; trade = null; anotarValor(c); guardar(c);
+  simMsg = `Listo: ${tipo === "comprar" ? "compraste" : "vendiste"} ${ACT[t]} por ${usd(m)}.`;
+  pintar(true);
+}
+function panelTrade(c, t) {
+  const max = maxTrade(c, t, trade.tipo), verbo = trade.tipo;
+  if (max < 1) return `<p class="aviso" style="margin-bottom:0">${verbo === "comprar" ? "No tienes efectivo disponible. Primero vende algo." : "No tienes este fondo."}</p>`;
+  const m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
+  return `<div style="margin-top:14px">
+    <label class="campo" for="m-${t}">¿Cuánto quieres ${verbo}? (máximo ${usd(max)})</label>
+    <div class="chips" style="margin-bottom:10px">${[[0.25, "Un cuarto"], [0.5, "La mitad"], [1, "Todo"]].map(([f, txt]) =>
+      `<button class="chip" aria-pressed="${Math.abs(m - max * f) < 0.01}" onclick="trade.monto=${(max * f).toFixed(4)};pintar()">${txt}</button>`).join("")}</div>
+    <input id="m-${t}" type="number" inputmode="decimal" min="1" value="${Math.floor(m)}" onchange="trade.monto=Math.min(${max.toFixed(4)},Math.max(1,+this.value||1));pintar()">
+    <button class="volver ancho" style="margin-top:12px;background:${verbo === "comprar" ? "var(--verde)" : "var(--rojo)"}" onclick="ejecutarTrade()">Confirmar: ${verbo} ${usd(m)}</button>
+    <button class="chip ancho" style="margin-top:8px" onclick="trade=null;pintar()">Cancelar</button></div>`;
+}
+function codigoCuenta() { return btoa(unescape(encodeURIComponent(JSON.stringify(cuenta())))); }
+function copiarCodigo() {
+  const txt = codigoCuenta();
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
+    () => alert("Código copiado. Pégalo en el otro celular o computadora, en «Recuperar mi cuenta»."),
+    () => { const a = document.getElementById("codigo"); a.select(); alert("Selecciona el texto del recuadro y cópialo."); });
+}
+function recuperar() {
+  const txt = (document.getElementById("pegar").value || "").trim();
+  try {
+    const c = JSON.parse(decodeURIComponent(escape(atob(txt))));
+    if (typeof c.efectivo !== "number" || typeof c.pos !== "object" || !Array.isArray(c.ops)) throw 0;
+    if (cuenta() && !confirm("Esto reemplaza la cuenta que tienes en este aparato. ¿Continuar?")) return;
+    c.costo = c.costo || {}; c.historial = c.historial || []; guardar(c);
+    simMsg = "Cuenta recuperada."; pintar(true);
+  } catch (e) { alert("Ese código no es válido. Revisa que lo hayas copiado completo."); }
+}
+
+function simulador() {
+  const c = cuenta();
+  const noGuarda = almacenOK ? "" : '<div class="aviso oro"><b>Ojo:</b> este navegador no deja guardar datos. Lo que hagas se perderá al cerrar. Ábrela en Chrome normal (no en modo incógnito).</div>';
+  const msg = simMsg ? `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>${esc(simMsg)}</b></div>` : "";
+  simMsg = "";
+  if (!c) return `${barra()}
+    <h1>Mi simulador</h1><p class="sub">Invierte dinero de práctica con precios reales</p>${noGuarda}
+    <div class="tarjeta"><h3>¿Cómo funciona?</h3><ol style="margin:8px 0 0;padding-left:24px">
+      <li>Recibes dinero de práctica. <b>No es real.</b></li>
+      <li>Puedes <b>copiar lo que hace un robot</b>, o comprar y vender tú mismo.</li>
+      <li>Cada día hábil los precios reales de la bolsa mueven tu dinero y ves si ganas o pierdes.</li></ol></div>
+    <div class="tarjeta"><label class="campo" style="margin-top:0">¿Con cuánto quieres empezar?</label>
+      <div class="chips">${[1000, 5000, 10000, 50000].map(v => `<button class="chip" aria-pressed="${simInicial === v}" onclick="simInicial=${v};pintar()">${usd(v)}</button>`).join("")}</div>
+      <button class="volver ancho" style="margin-top:18px;background:var(--verde)" onclick="abrirCuenta()">Empezar con ${usd(simInicial)}</button></div>
+    <div class="tarjeta"><h3>¿Ya tienes una cuenta en otro aparato?</h3>
+      <p class="chica">Pega aquí el código que copiaste desde el otro celular o computadora.</p>
+      <textarea id="pegar" rows="3" style="width:100%;font-size:15px;border:2px solid var(--borde);border-radius:12px;padding:10px"></textarea>
+      <button class="chip ancho" style="margin-top:10px" onclick="recuperar()">Recuperar mi cuenta</button></div>${pie()}`;
+
+  anotarValor(c); guardar(c);
+  const p = precios(), total = valorCuenta(c), gan = total - c.inicial;
+  const R = D.robots.robots;
+  // ¿el robot que sigue cambió de idea?
+  let cambio = "";
+  if (c.sigue != null && R[c.sigue]) {
+    const w = pesosCuenta(c), wr = R[c.sigue].pesos || {};
+    if (ORDEN.some(t => Math.abs((w[t] || 0) - (wr[t] || 0)) > 0.05))
+      cambio = `<div class="aviso oro"><b>El robot "${esc(R[c.sigue].nombre)}" cambió de idea.</b><br>Ahora tiene: ${esc(tiene(wr))}.
+        <button class="volver ancho" style="margin-top:10px;background:var(--dorado)" onclick="copiarRobot(${c.sigue})">Volver a copiarlo</button></div>`;
+  }
+  const grafica = c.historial.length >= 2
+    ? `<div class="tarjeta"><h3>Así ha ido mi dinero</h3>${grafico([{valores: c.historial.map(h => h[1]), color: "#1F3A5F", grueso: true}],
+        {alto: 220, base: c.inicial, etiquetasX: [[0, fecha(c.historial[0][0])], [c.historial.length - 1, fecha(c.historial[c.historial.length - 1][0])]]})}
+        <p class="chica">La línea punteada es lo que pusiste al inicio. Se anota un punto cada día que abres el simulador.</p></div>` : "";
+  const items = ORDEN.filter(t => (c.pos[t] || 0) * p[t] >= 0.5).map(t => {
+    const v = c.pos[t] * p[t], g = v - (c.costo[t] || 0);
+    return `<li><div class="fila" style="justify-content:space-between"><b>${ACT[t]}</b><b style="font-size:22px">${usd(v)}</b></div>
+      <div class="chica">${g >= 0 ? "Vas ganando" : "Vas perdiendo"} <b class="${clase(g)}" style="background:none">${usd(Math.abs(g))}</b> en este fondo</div></li>`;
+  });
+  items.push(`<li><div class="fila" style="justify-content:space-between"><b>Efectivo (sin invertir)</b><b style="font-size:22px">${usd(c.efectivo)}</b></div></li>`);
+  const rb = R[simRobot];
+  const fondos = ORDEN.map(t => {
+    const a = D.mercado.activos.find(x => x.ticker === t), tieneT = (c.pos[t] || 0) * p[t] >= 0.5;
+    return `<div class="tarjeta"><h3>${ACT[t]}</h3>
+      <div class="fila"><span class="grande" style="font-size:26px">${usd(a.precio, 2)}</span><span class="pill ${clase(a.dia)}">${flecha(a.dia)} ${pct(a.dia)} hoy</span></div>
+      <div class="grid2" style="grid-template-columns:1fr 1fr;margin-top:12px">
+        <button class="chip" style="background:var(--verde);border-color:var(--verde);color:#fff" onclick="abrirTrade('${t}','comprar')">Comprar</button>
+        <button class="chip" style="background:var(--rojo);border-color:var(--rojo);color:#fff" ${tieneT ? "" : "disabled"} onclick="abrirTrade('${t}','vender')">Vender</button></div>
+      ${trade && trade.t === t ? panelTrade(c, t) : ""}</div>`;
+  }).join("");
+  const ops = c.ops.slice(0, 20).map(o => `<li><span class="chica">${fecha(o.f)}</span><br>
+    <b class="${o.a === "compró" ? "sube" : "baja"}" style="background:none">${o.a === "compró" ? "Compraste" : "Vendiste"}</b> ${esc(ACT[o.t])} por ${usd(o.m)}</li>`).join("") || "<li>Todavía no has hecho operaciones.</li>";
+
+  return `${barra()}
+  <h1>Mi simulador</h1><p class="sub">Dinero de práctica · precios reales del cierre del ${fecha(D.fecha_precios)}</p>${noGuarda}${msg}
+  <div class="banner"><span class="chica">Mi dinero de práctica hoy</span>
+    <b style="font-size:40px;margin:4px 0">${usd(total)}</b>
+    <span>${gan >= 0 ? "Ganancia" : "Pérdida"}: <b>${gan >= 0 ? "+" : "−"}${usd(Math.abs(gan))} (${pct(gan / c.inicial)})</b> desde el ${fecha(c.inicio)}</span>
+    ${c.sigue != null && R[c.sigue] ? `<span class="chica" style="display:block;margin-top:6px">Estás copiando a: ${esc(R[c.sigue].nombre)}</span>` : ""}</div>
+  ${cambio}${grafica}
+  <h2>Lo que tengo</h2><div class="tarjeta"><ul class="lista">${items.join("")}</ul></div>
+
+  <h2>1. Copiar a un robot</h2>
+  <p>Elige un robot y tu dinero quedará repartido igual que el suyo.</p>
+  <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};pintar()">${esc(r.nombre)}</button>`).join("")}</div>
+  <div class="tarjeta"><h3>${esc(rb.nombre)}</h3><p class="chica">${esc(rb.corta)}</p>
+    <p><b>Hoy tiene:</b> ${esc(tiene(rb.pesos))}</p>
+    <button class="volver ancho" onclick="copiarRobot(${simRobot})">Hacer lo mismo con mi dinero</button>
+    <p class="chica" style="margin:10px 0 0">Los robots cambian de idea de vez en cuando (la mayoría, a fin de mes). Si eso pasa, aquí te aparecerá un aviso para volver a copiarlo.</p></div>
+
+  <h2>2. O decidir yo mismo</h2>
+  <p>Compra o vende cualquiera de los 4 fondos. Se usa el precio de cierre más reciente y se cobra un pequeño costo de 0.10%, como en la vida real.</p>
+  <div class="grid2">${fondos}</div>
+
+  <h2>Mis operaciones</h2><div class="tarjeta"><ul class="lista">${ops}</ul></div>
+
+  <details><summary>Pasar mi cuenta a otro celular o computadora</summary>
+    <p>Tu cuenta se guarda solo en este aparato. Para usarla en otro, copia este código y pégalo allá, en «Mi simulador».</p>
+    <textarea id="codigo" rows="3" readonly style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px">${codigoCuenta()}</textarea>
+    <button class="chip ancho" style="margin:10px 0 16px" onclick="copiarCodigo()">Copiar código</button>
+    <p class="chica">¿Traes un código de otro aparato? Pégalo aquí:</p>
+    <textarea id="pegar" rows="3" style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px"></textarea>
+    <button class="chip ancho" style="margin:10px 0 16px" onclick="recuperar()">Recuperar mi cuenta</button></details>
+  <button class="chip ancho" style="margin-top:20px;color:var(--rojo);border-color:#F2BDB6" onclick="reiniciar()">Empezar de nuevo (borrar mi cuenta)</button>
+  ${pie()}`;
+}
+
 function ayuda() {
   const q = (t, c) => `<details><summary>${t}</summary>${c}</details>`;
   return `${barra()}
@@ -398,12 +585,14 @@ function ayuda() {
   ${q("¿Cada cuánto debemos mirarla?", "<p>Una vez por semana es suficiente. Los robots casi no hacen operaciones: la mayoría decide una sola vez al mes.</p>")}
   ${q("¿Cuándo podremos sacar conclusiones?", "<p>No antes de 3 meses, idealmente a los 6. Con pocas semanas, que un robot gane o pierda es casi pura suerte.</p>")}
   ${q("¿Entonces debemos invertir con un robot?", "<p>Todavía no. En la historia de 20 años, desde 2018 ningún robot le ganó a «Sin hacer nada». La práctica sirve justamente para comprobar con calma si alguno vale la pena antes de arriesgar dinero real. Cualquier decisión se conversa en familia, y no es una recomendación de inversión.</p>")}
+  ${q("¿Cómo uso «Mi simulador»?", "<p>Es tu propia cuenta de práctica. Eliges con cuánto empezar y luego puedes <b>copiar a un robot</b> (tu dinero queda repartido igual que el suyo) o <b>comprar y vender tú mismo</b>. Los precios son los reales del último cierre de la bolsa. Si el robot que copias cambia de idea, aparece un aviso para volver a copiarlo.</p>")}
+  ${q("¿Mi simulador se ve en otro celular?", "<p>No automáticamente: cada celular o computadora guarda su propia cuenta. Para pasarla, en «Mi simulador» abre <b>«Pasar mi cuenta a otro celular o computadora»</b>, copia el código y pégalo en el otro aparato.</p>")}
   ${q("¿Cómo la instalo en el celular?", "<p>En Android: abre esta página en <b>Chrome</b>, toca los tres puntos ⋮ arriba a la derecha y elige <b>«Agregar a la pantalla principal»</b> o <b>«Instalar app»</b>. Aparecerá un ícono como cualquier otra app.</p>")}
   ${pie()}`;
 }
 
 /* ---------- navegación ---------- */
-const PANTALLAS = {"": inicio, mercado, robots, historia, calculadora, ayuda};
+const PANTALLAS = {"": inicio, mercado, simulador, robots, historia, calculadora, ayuda};
 function ir(r) { location.hash = r ? "#" + r : "#"; }
 function pintar(conScroll = false) {
   const r = location.hash.replace("#", "");
