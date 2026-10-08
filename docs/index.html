@@ -149,6 +149,13 @@ details[open] summary::after{content:"－"}
 details p,details ul{padding-bottom:6px}
 footer{margin-top:30px;color:var(--suave);font-size:14px;text-align:center}
 .cargando{padding:60px 0;text-align:center;color:var(--suave)}
+.boton-tarjeta{display:block;width:100%;text-align:left;cursor:pointer;color:var(--tinta);font:inherit}
+.tres{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.tres .tarjeta{margin:0;display:flex;flex-direction:column;gap:2px}
+.tres .tarjeta:last-child{grid-column:1 / -1}
+.tres .grande{font-size:26px}
+@media(min-width:760px){.tres{grid-template-columns:1fr 1fr 1fr}.tres .tarjeta:last-child{grid-column:auto}}
+.t-sube{color:var(--verde)}.t-baja{color:var(--rojo)}
 .tabla-rank .pos{font-size:22px;font-weight:800;color:var(--suave);width:34px;flex:0 0 34px}
 .ajuste{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--borde)}
 .ajuste:last-child{border-bottom:0}
@@ -260,24 +267,106 @@ const barra = () => `<header class="appbar"><button class="atras" onclick="ir(''
   <img src="logo-v2-192.png" alt=""><span class="marca">Trading Algorítmico</span></header>`;
 const pie = () => `<footer>Práctica educativa con dinero ficticio. No es una recomendación de inversión.<br>Precios reales al cierre del ${fecha(D.fecha_precios)}.</footer>`;
 
+/* ---------- inicio: el resumen del día ---------- */
+const CONSEJOS = [
+  ["No pongas todos los huevos en la misma canasta", "Repartir el dinero entre acciones y bonos hace que, cuando algo cae, no caiga todo a la vez."],
+  ["Las caídas son normales", "Desde 2003 la bolsa de EE. UU. tuvo varias caídas de más de 20%, y siempre terminó recuperándose. Lo difícil es no vender por miedo."],
+  ["El tiempo es tu mejor aliado", "US$ 1,000 que crecen 10% al año se vuelven unos US$ 2,600 en 10 años y unos US$ 6,700 en 20 años."],
+  ["Un día no dice nada", "Que un robot gane o pierda un día es casi pura suerte. Para juzgarlo, mira al menos 3 meses."],
+  ["Cuidado con las promesas", "Nadie puede garantizar ganancias en la bolsa. Si alguien te promete un % fijo cada mes, desconfía: suele ser una estafa."],
+  ["Solo invierte lo que no necesitas", "El dinero de la bolsa debería ser dinero que no vas a usar en al menos 5 años."],
+  ["Las comisiones suman", "Cada compra o venta cuesta un poquito. Comprar y vender todos los días hace que esos costos se coman la ganancia."],
+  ["¿Qué es un bono?", "Es un préstamo que le haces a un gobierno o empresa a cambio de intereses. Se mueve poco y suele aguantar cuando las acciones caen."],
+  ["¿Qué es un fondo (ETF)?", "Es una canasta con cientos de acciones o bonos. Con una sola compra repartes tu dinero entre muchas empresas."],
+  ["Comprar caro por miedo a perderse algo", "Cuando todos hablan de que algo sube mucho, suele estar caro. Los robots no se dejan llevar por esa emoción."],
+  ["El peor momento para vender", "Muchas personas venden justo después de una gran caída y se pierden la recuperación. Tener un plan evita ese error."],
+  ["¿Qué hace un robot?", "Sigue reglas fijas, sin miedo ni emoción. Esa es su ventaja: no se asusta ni se emociona."],
+  ["Lo que pasó no se repite igual", "Que una estrategia funcionara en el pasado no garantiza que funcione en el futuro. Por eso practicamos antes."],
+  ["Compara siempre contra «no hacer nada»", "Si un robot no le gana a simplemente comprar y esperar, no vale la pena complicarse."],
+  ["El dólar también se mueve", "Si inviertes en dólares, el tipo de cambio afecta cuánto vale tu dinero en soles."],
+  ["Paciencia antes que velocidad", "Las personas que miran su inversión todos los días suelen tomar peores decisiones que las que la miran una vez al mes."],
+  ["Practicar no cuesta nada", "Usa el simulador para equivocarte con dinero de mentira. Es la forma más barata de aprender."],
+  ["Los intereses compuestos", "Ganar sobre lo que ya ganaste hace que el dinero crezca cada vez más rápido con los años."],
+  ["La bolsa abre de lunes a viernes", "En Lima, más o menos de 8:30 a.m. a 3:00 p.m. Fines de semana y feriados de EE. UU. está cerrada."],
+  ["Una regla para el susto", "Antes de invertir, decide cuánto estarías dispuesto a ver caer tu dinero sin vender. Escríbelo y respétalo."],
+];
+function horaLima() { return new Date(new Date().toLocaleString("en-US", {timeZone: "America/Lima"})); }
+function avisosHoy(c) {
+  const out = [], ahora = horaLima(), ny = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
+  const dia = ny.getDay();
+  // fin de mes: los robots mensuales deciden el último día hábil
+  const ultimoHabil = (() => { const d = new Date(ny.getFullYear(), ny.getMonth() + 1, 0); while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1); return d.getDate(); })();
+  const faltan = ultimoHabil - ny.getDate();
+  if (dia >= 1 && dia <= 5 && faltan === 0) out.push(["📅", "Hoy es el último día hábil del mes", "Al cierre de la bolsa, varios robots revisan sus decisiones. Mañana mira si alguno cambió de idea."]);
+  else if (faltan > 0 && faltan <= 3) out.push(["📅", `Se acerca fin de mes (en ${faltan} día${faltan === 1 ? "" : "s"})`, "El último día hábil del mes varios robots revisan sus decisiones."]);
+  if (dia === 0 || dia === 6) out.push(["😴", "Hoy la bolsa descansa", "Es fin de semana: los precios no se mueven hasta el lunes. Buen momento para leer y aprender."]);
+  if (c && c.sigue != null && D.robots.robots[c.sigue] && difiere(c, c.sigue))
+    out.push(["🤖", `El robot «${D.robots.robots[c.sigue].nombre}» cambió de idea`, c.auto ? "Entra a tu simulador y tu dinero se acomodará solo." : "Entra a tu simulador si quieres volver a copiarlo."]);
+  return out;
+}
+function cambioHoySPY() {
+  const a = D.mercado.activos.find(x => x.ticker === "SPY");
+  return enCursoHoy() ? ultimo("SPY").precio / a.precio - 1 : a.dia;
+}
 function inicio() {
-  const m = D.mercado;
+  const m = D.mercado, ahora = horaLima(), h = ahora.getHours();
+  const saludo = h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches";
+  const hoyTxt = ahora.toLocaleDateString("es-PE", {weekday: "long", day: "numeric", month: "long"});
+  const abierta = bolsaAbierta();
+  const c = cuenta();
+  // tu juego
+  let juego;
+  if (c) {
+    const v = valorCuenta(c), gan = v - c.inicial, hh = c.historial || [];
+    const ayer = hh.length >= 2 ? hh[hh.length - 2][1] : null;
+    juego = `<button class="tarjeta boton-tarjeta" onclick="ir('simulador')">
+      <span class="chica">💼 Mi juego de práctica</span>
+      <span class="grande" style="display:block;margin:2px 0">${usd(v, 2)}</span>${enSoles(v)}
+      <span class="fila" style="margin-top:6px">
+        <span class="pill ${clase(gan)}">${flecha(gan / c.inicial)} ${pct(gan / c.inicial)} en total</span>
+        ${ayer ? `<span class="pill ${clase(v / ayer - 1)}">${flecha(v / ayer - 1)} ${pct(v / ayer - 1, 2)} desde la última vez</span>` : ""}</span>
+      <span class="chica" style="display:block;margin-top:8px">${c.auto && c.sigue != null ? `🤖 Lo maneja el robot «${esc(D.robots.robots[c.sigue].nombre)}»` : "Tú decides cuándo comprar y vender"} · Toca para abrir</span></button>`;
+  } else {
+    juego = `<div class="tarjeta"><h3>💼 Empieza tu juego de práctica</h3>
+      <p class="chica">Recibe US$ 100 de mentira y aprende a invertir con precios reales, sin riesgo.</p>
+      <button class="volver ancho" style="background:var(--verde-btn)" onclick="ir('simulador')">Empezar ahora</button></div>`;
+  }
+  // hoy en 3 números
+  const spy = cambioHoySPY();
+  const lider = D.robots.robots.map((r, i) => ({i, g: gananciaVentana(i, "hoy")})).sort((a, b) => b.g - a.g);
+  const empate = lider[0].g - lider[lider.length - 1].g < 0.0005;
+  const avisos = avisosHoy(c);
+  const n = Math.floor(Date.now() / 864e5) % CONSEJOS.length, [ct, cx] = CONSEJOS[n];
   return `
   <header class="appbar"><img src="logo-v2-192.png" alt=""><span class="marca">Trading Algorítmico<small>Datos del ${fecha(D.fecha_precios)}</small></span>
     <button class="engranaje" onclick="ir('ajustes')" aria-label="Ajustes">${icono("ajustes")}</button></header>
-  <div class="hero"><h1>Bienvenidos</h1><p>Aprendan a invertir con robots y precios reales de la bolsa de Nueva York, sin arriesgar dinero.</p></div>
-  ${D.demo ? '<div class="aviso oro"><b>Datos de prueba.</b> Estos números son inventados. En unos minutos se reemplazan por precios reales.</div>' : ""}
-  <button class="semaforo s-${m.color}" onclick="ir('mercado')" aria-label="Ver cómo está el mercado hoy">
-    <span class="luz"></span><span><span class="chica">Hoy, en una frase:</span><b>${esc(m.titular)}</b></span>
-  </button>
+  <div class="hero"><h1>${saludo}</h1><p style="text-transform:none">${hoyTxt.charAt(0).toUpperCase() + hoyTxt.slice(1)}</p>
+    <p style="margin-top:10px;color:#fff;font-weight:600">${abierta ? "🟢 La bolsa está abierta" : "🔴 La bolsa está cerrada"}
+      <span style="font-weight:400;color:#C9D5E6"> · abre de lunes a viernes ${horarioLima()}</span></p></div>
+  ${D.demo ? '<div class="aviso oro"><b>Datos de prueba.</b> Estos números son inventados.</div>' : ""}
+  ${juego}
+  ${avisos.map(([ic, t, x]) => `<div class="aviso oro"><b>${ic} ${esc(t)}</b><br>${esc(x)}</div>`).join("")}
+  <h2>Hoy en 3 números</h2>
+  <div class="tres">
+    <button class="tarjeta boton-tarjeta" onclick="ir('mercado')"><span class="chica">Acciones de EE. UU.</span>
+      <span class="grande ${spy > 0.0005 ? "t-sube" : spy < -0.0005 ? "t-baja" : ""}">${flecha(spy)} ${pct(spy, 2)}</span>
+      <span class="chica">${enCursoHoy() ? "hoy" : "último día de bolsa"}</span></button>
+    <button class="tarjeta boton-tarjeta" onclick="ir('mercado')"><span class="chica">Dólar</span>
+      <span class="grande">S/ ${m.tipo_cambio.toFixed(2)}</span><span class="chica">por cada dólar</span></button>
+    <button class="tarjeta boton-tarjeta" onclick="ir('robots')"><span class="chica">${!empate && lider[0].g <= 0.0005 ? "Robot que mejor aguantó (todos bajaron o empataron)" : "Robot que va ganando"}</span>
+      <span class="grande" style="font-size:22px">${empate ? "Empatados" : `${FICHAS[lider[0].i].emoji} ${esc(D.robots.robots[lider[0].i].nombre)}`}</span>
+      <span class="chica">${empate ? "el precio aún no se mueve" : `${pct(lider[0].g, 2)} ${enCursoHoy() ? "hoy" : "en el último día"}`}</span></button>
+  </div>
+  <button class="semaforo s-${m.color}" onclick="ir('mercado')" aria-label="Ver cómo está el mercado">
+    <span class="luz"></span><span><span class="chica">El mercado, en una frase:</span><b>${esc(m.titular)}</b></span></button>
+  <h2>💡 Aprende algo hoy</h2>
+  <div class="tarjeta" style="border-left:5px solid var(--dorado)"><h3>${esc(ct)}</h3><p style="margin:0">${esc(cx)}</p>
+    <p class="chica" style="margin:8px 0 0">Cada día aparece un consejo nuevo.</p></div>
+  <h2>Más para explorar</h2>
   <div class="botones">
-    ${btn("mercado", icono("mercado"), "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
-    ${btn("simulador", icono("simulador"), "Mi simulador", "Juega a invertir con dinero de mentira")}
-    ${btn("robots", icono("robots"), "Competencia de robots", "6 robots compiten con dinero de mentira")}
-    ${btn("historia", icono("historia"), "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
+    ${btn("historia", icono("historia"), "Historia de 20 años", "Cómo les fue a los robots, incluso en las crisis")}
     ${btn("calculadora", icono("calculadora"), "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
     ${btn("ayuda", icono("ayuda"), "¿Qué es todo esto?", "Explicaciones en palabras sencillas")}
-    ${btn("ajustes", icono("ajustes"), "Ajustes", "Modo oscuro, tamaño de letra y más")}
   </div>${pie()}`;
 }
 const btn = (r, ico, t, s) => `<button class="boton" onclick="ir('${r}')"><span class="ico" aria-hidden="true">${ico}</span><span><b>${t}</b><span>${s}</span></span><span class="flecha" aria-hidden="true">›</span></button>`;
