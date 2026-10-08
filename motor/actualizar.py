@@ -220,12 +220,13 @@ def peor_momento(ret: pd.Series) -> dict:
 def historia(p: pd.DataFrame) -> dict:
     inicio = p.index[260]
     d = pd.Timestamp(DIVISION)
-    curvas, metricas, crisis = {}, [], []
+    curvas, metricas, crisis, diarias = {}, [], [], {}
     for rid, nombre, *_ in ROBOTS:
         ret, pos, rot = es.simular(es.ESTRATEGIAS[rid](p), p, COSTO)
         ret = ret.loc[inicio:]
         curva = (1 + ret).cumprod()
         curvas[rid[0]] = curva
+        diarias[rid[0]] = curva.iloc[-300:]
         fila = {"id": rid[0], "nombre": nombre}
         for clave, desde, hasta in (("todo", inicio, None), ("antes", inicio, d - pd.Timedelta(days=1)), ("prueba", d, None)):
             m = es.metricas(ret.loc[desde:hasta], pos.loc[desde:hasta], rot.loc[desde:hasta])
@@ -248,6 +249,8 @@ def historia(p: pd.DataFrame) -> dict:
         "desde": inicio.strftime("%Y-%m-%d"), "division": DIVISION, "metricas": metricas, "crisis": crisis,
         "meses": [i.strftime("%Y-%m") for i in mens.index],
         "curvas": {k: [r(v, 5) for v in mens[k]] for k in mens.columns},
+        "diario": {"fechas": [d.strftime("%Y-%m-%d") for d in diarias["0"].index],
+                   "curvas": {k: [r(v / c.iloc[-1], 6) for v in c] for k, c in diarias.items()}},
     }
 
 
