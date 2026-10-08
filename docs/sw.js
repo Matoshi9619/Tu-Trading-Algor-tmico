@@ -1,5 +1,5 @@
 // Permite abrir la app sin internet mostrando los últimos datos guardados.
-const CACHE = "inversion-v2";
+const CACHE = "inversion-v3";
 const BASE = ["./", "index.html", "manifest.json", "icono-192.png", "icono-512.png"];
 
 self.addEventListener("install", e => {

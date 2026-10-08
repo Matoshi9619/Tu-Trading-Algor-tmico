@@ -90,6 +90,9 @@ svg text{font-family:inherit}
 .chip[aria-pressed=true]{background:var(--azul);border-color:var(--azul);color:#fff}
 .chip:disabled{opacity:.35;cursor:default}
 .ancho{width:100%;justify-content:center}
+.pasos div{display:flex;gap:14px;align-items:flex-start;margin:12px 0}
+.pasos span{flex:0 0 40px;height:40px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}
+.pasos p{margin:6px 0 0}
 label.campo{display:block;font-weight:700;margin:16px 0 8px}
 select,input[type=number]{width:100%;min-height:58px;border:2px solid var(--borde);border-radius:14px;padding:10px 14px;background:#fff;font-size:20px}
 .barras .b{margin:10px 0}
@@ -201,7 +204,7 @@ function inicio() {
   </button>
   <div class="botones">
     ${btn("mercado", "🚦", "¿Cómo está el mercado hoy?", "El semáforo y los precios explicados")}
-    ${btn("simulador", "💼", "Mi simulador", "Invierte dinero de práctica tú mismo")}
+    ${btn("simulador", "💼", "Mi simulador", "Juega a invertir con dinero de mentira")}
     ${btn("robots", "🤖", "Competencia de robots", "6 robots con US$ 10,000 de mentira")}
     ${btn("historia", "📜", "Historia de 20 años", "Cómo les fue, incluso en las crisis")}
     ${btn("calculadora", "🧮", "¿Y si hubiera invertido?", "Elige monto y fecha, mira el resultado")}
@@ -390,9 +393,20 @@ function calculadora() {
 /* ---------- mi simulador (cuenta personal, guardada en este aparato) ---------- */
 const CLAVE = "nuestra-inversion-simulador-v1";
 const ORDEN = ["SPY", "EFA", "IEF", "SHY"];
+const CORTO = {SPY: "Acciones EE. UU.", EFA: "Acciones del mundo", IEF: "Bonos EE. UU.", SHY: "Bonos cortos"};
+const QUE_ES = {
+  SPY: "Las 500 empresas más grandes de EE. UU. (Apple, Microsoft, Amazon...). Puede subir mucho, pero también caer mucho.",
+  EFA: "Grandes empresas de Europa, Japón y Australia. Se mueve parecido a las de EE. UU.",
+  IEF: "Préstamos al gobierno de EE. UU. Se mueve poco. Suele aguantar cuando las acciones caen.",
+  SHY: "Préstamos de corto plazo al gobierno de EE. UU. Casi no se mueve: es como guardar el dinero.",
+};
+const INTERVALOS = [["15m", "Cada 15 minutos"], ["1h", "Cada hora"], ["1d", "Cada día"], ["1wk", "Cada semana"]];
 const COSTO_OP = 0.001;
 const almacenOK = (() => { try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); return true; } catch (e) { return false; } })();
-let CUENTA = null, simInicial = 10000, simRobot = 1, trade = null, simMsg = "";
+let CUENTA = null, VELAS = null, simInicial = 100, simFondo = "SPY", simIntervalo = "15m", simRobot = 1, trade = null, simMsg = "";
+
+fetch("velas.json?v=" + Date.now(), {cache: "no-store"}).then(r => r.ok ? r.json() : null)
+  .then(v => { VELAS = v && v.velas ? v.velas : null; if (D && location.hash === "#simulador") pintar(); }).catch(() => {});
 
 function cuenta() {
   if (CUENTA) return CUENTA;
@@ -400,31 +414,60 @@ function cuenta() {
   return CUENTA;
 }
 function guardar(c) { CUENTA = c; try { localStorage.setItem(CLAVE, JSON.stringify(c)); } catch (e) {} }
-function precios() { const p = {}; D.mercado.activos.forEach(a => p[a.ticker] = a.precio); return p; }
+
+/* precio más reciente: la última vela de 15 minutos si existe, si no el cierre diario */
+function ultimo(t) {
+  const v = VELAS && VELAS[t] && VELAS[t]["15m"];
+  if (v && v.length) { const b = v[v.length - 1]; return {precio: b[4], cuando: b[0]}; }
+  const a = D.mercado.activos.find(x => x.ticker === t);
+  return {precio: a.precio, cuando: D.fecha_precios};
+}
+function precios() { const p = {}; ORDEN.forEach(t => p[t] = ultimo(t).precio); return p; }
+function cuandoTxt(s) {
+  const [f, h] = s.split(" "); if (!h) return "cierre del " + fecha(f);
+  let [hh, mm] = h.split(":").map(Number); const ap = hh >= 12 ? "p.m." : "a.m."; hh = hh % 12 || 12;
+  return `${fecha(f)}, ${hh}:${String(mm).padStart(2, "0")} ${ap} (hora de Lima)`;
+}
+function bolsaAbierta() {
+  const ny = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
+  const d = ny.getDay(), m = ny.getHours() * 60 + ny.getMinutes();
+  return d >= 1 && d <= 5 && m >= 570 && m < 960;
+}
+function horarioLima() {   // 9:30 a 16:00 en Nueva York, convertido a hora de Lima
+  const ahora = new Date();
+  const ny = new Date(ahora.toLocaleString("en-US", {timeZone: "America/New_York"}));
+  const li = new Date(ahora.toLocaleString("en-US", {timeZone: "America/Lima"}));
+  const dif = Math.round((li - ny) / 3600000);
+  const h = x => { const hh = ((x % 24) + 24) % 24, e = Math.floor(hh), m = Math.round((hh - e) * 60);
+    return `${e % 12 || 12}:${String(m).padStart(2, "0")} ${e >= 12 ? "p.m." : "a.m."}`; };
+  return `de ${h(9.5 + dif)} a ${h(16 + dif)}`;
+}
 function valorCuenta(c) { const p = precios(); return c.efectivo + Object.entries(c.pos).reduce((s, [t, u]) => s + u * p[t], 0); }
 function pesosCuenta(c) { const p = precios(), tot = valorCuenta(c), w = {}; ORDEN.forEach(t => w[t] = (c.pos[t] || 0) * p[t] / tot); return w; }
 function anotarValor(c) {
-  const f = D.fecha_precios, v = Math.round(valorCuenta(c) * 100) / 100, h = c.historial;
+  const f = D.fecha_precios > (ultimo("SPY").cuando || "").slice(0, 10) ? D.fecha_precios : ultimo("SPY").cuando.slice(0, 10);
+  const v = Math.round(valorCuenta(c) * 100) / 100, h = c.historial;
   if (h.length && h[h.length - 1][0] === f) h[h.length - 1][1] = v; else h.push([f, v]);
 }
 function comprar(c, t, m) {
-  const p = precios(); m = Math.min(m, c.efectivo / (1 + COSTO_OP)); if (m < 1) return 0;
+  const u = ultimo(t); m = Math.min(m, c.efectivo / (1 + COSTO_OP)); if (m < 0.5) return 0;
   c.efectivo = Math.max(0, c.efectivo - m * (1 + COSTO_OP));
-  c.pos[t] = (c.pos[t] || 0) + m / p[t]; c.costo[t] = (c.costo[t] || 0) + m * (1 + COSTO_OP);
-  c.ops.unshift({f: D.fecha_precios, a: "compró", t, m: Math.round(m * 100) / 100}); return m;
+  c.pos[t] = (c.pos[t] || 0) + m / u.precio; c.costo[t] = (c.costo[t] || 0) + m * (1 + COSTO_OP);
+  c.ops.unshift({f: u.cuando, a: "compró", t, m: Math.round(m * 100) / 100, p: u.precio}); return m;
 }
 function vender(c, t, m, todo) {
-  const p = precios(), tiene = c.pos[t] || 0; if (!tiene) return 0;
-  const u = todo ? tiene : Math.min(tiene, m / p[t]), frac = u / tiene;
-  c.efectivo += u * p[t] * (1 - COSTO_OP); c.costo[t] = (c.costo[t] || 0) * (1 - frac); c.pos[t] = tiene - u;
-  if (c.pos[t] * p[t] < 0.01) { delete c.pos[t]; delete c.costo[t]; }
-  c.ops.unshift({f: D.fecha_precios, a: "vendió", t, m: Math.round(u * p[t] * 100) / 100}); return u * p[t];
+  const u = ultimo(t), tiene = c.pos[t] || 0; if (!tiene) return 0;
+  const n = todo ? tiene : Math.min(tiene, m / u.precio), frac = n / tiene;
+  c.efectivo += n * u.precio * (1 - COSTO_OP); c.costo[t] = (c.costo[t] || 0) * (1 - frac); c.pos[t] = tiene - n;
+  if (c.pos[t] * u.precio < 0.01) { delete c.pos[t]; delete c.costo[t]; }
+  c.ops.unshift({f: u.cuando, a: "vendió", t, m: Math.round(n * u.precio * 100) / 100, p: u.precio}); return n * u.precio;
 }
 function abrirCuenta() {
-  const c = {inicial: simInicial, efectivo: simInicial, pos: {}, costo: {}, ops: [], historial: [], inicio: D.fecha_precios, sigue: null};
+  const monto = Math.max(1, Math.round(simInicial * 100) / 100);
+  const c = {inicial: monto, efectivo: monto, pos: {}, costo: {}, ops: [], historial: [], inicio: D.fecha_precios, sigue: null};
   anotarValor(c); guardar(c);
-  simMsg = "¡Listo! Ya tienes " + usd(simInicial) + " de práctica. Ahora copia a un robot o compra por tu cuenta.";
-  pintar();
+  simMsg = `¡Listo! Tienes ${usd(monto, 2)} de práctica en efectivo. Ahora mira el precio y, cuando quieras, toca «Comprar».`;
+  pintar(true);
 }
 function reiniciar() {
   if (!confirm("¿Borrar tu cuenta de práctica y empezar de nuevo? Se pierde todo lo que hiciste.")) return;
@@ -433,141 +476,245 @@ function reiniciar() {
 }
 function copiarRobot(i) {
   const rb = D.robots.robots[i], c = cuenta();
-  if (!confirm(`¿Repartir tu dinero igual que el robot "${rb.nombre}"?\n\nHoy tiene: ${tiene(rb.pesos)}.\nSe venderá y comprará lo necesario a los precios de cierre del ${fecha(D.fecha_precios)}.`)) return;
+  if (!confirm(`¿Repartir tu dinero igual que el robot "${rb.nombre}"?\n\nHoy el robot tiene: ${tiene(rb.pesos)}.`)) return;
   const p = precios(), total = valorCuenta(c), w = rb.pesos || {};
-  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total;
-    if (act - quiere > 1) vender(c, t, act - quiere, quiere < 1); });
-  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total;
-    if (quiere - act > 1) comprar(c, t, quiere - act); });
+  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total; if (act - quiere > 0.5) vender(c, t, act - quiere, quiere < 0.5); });
+  ORDEN.forEach(t => { const act = (c.pos[t] || 0) * p[t], quiere = (w[t] || 0) * total; if (quiere - act > 0.5) comprar(c, t, quiere - act); });
   c.sigue = i; trade = null; anotarValor(c); guardar(c);
-  simMsg = `Listo: tu dinero quedó repartido igual que "${rb.nombre}".`;
+  simMsg = `Listo: tu dinero quedó repartido igual que el del robot «${rb.nombre}».`;
   pintar(true);
 }
-function abrirTrade(t, tipo) { trade = (trade && trade.t === t && trade.tipo === tipo) ? null : {t, tipo, monto: null}; pintar(); }
-function maxTrade(c, t, tipo) { return tipo === "comprar" ? c.efectivo / (1 + COSTO_OP) : (c.pos[t] || 0) * precios()[t]; }
+function abrirTrade(tipo) { trade = (trade && trade.tipo === tipo && trade.t === simFondo) ? null : {t: simFondo, tipo, monto: null}; pintar(); }
+function maxTrade(c, t, tipo) { return tipo === "comprar" ? c.efectivo / (1 + COSTO_OP) : (c.pos[t] || 0) * ultimo(t).precio; }
 function ejecutarTrade() {
   const c = cuenta(), {t, tipo} = trade, max = maxTrade(c, t, tipo);
   let m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
-  if (m < 1) return;
+  if (m < 0.5) return;
   m = tipo === "comprar" ? comprar(c, t, m) : vender(c, t, m, m >= max - 0.01);
   c.sigue = null; trade = null; anotarValor(c); guardar(c);
-  simMsg = `Listo: ${tipo === "comprar" ? "compraste" : "vendiste"} ${ACT[t]} por ${usd(m)}.`;
+  simMsg = tipo === "comprar"
+    ? `Listo: pusiste ${usd(m, 2)} en ${ACT[t]}. Desde ahora, si su precio sube, ese dinero crece; si baja, se achica.`
+    : `Listo: sacaste ${usd(m, 2)} de ${ACT[t]}. Ese dinero volvió a tu efectivo y ya no se mueve con el precio.`;
   pintar(true);
 }
-function panelTrade(c, t) {
-  const max = maxTrade(c, t, trade.tipo), verbo = trade.tipo;
-  if (max < 1) return `<p class="aviso" style="margin-bottom:0">${verbo === "comprar" ? "No tienes efectivo disponible. Primero vende algo." : "No tienes este fondo."}</p>`;
-  const m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
-  return `<div style="margin-top:14px">
-    <label class="campo" for="m-${t}">¿Cuánto quieres ${verbo}? (máximo ${usd(max)})</label>
-    <div class="chips" style="margin-bottom:10px">${[[0.25, "Un cuarto"], [0.5, "La mitad"], [1, "Todo"]].map(([f, txt]) =>
-      `<button class="chip" aria-pressed="${Math.abs(m - max * f) < 0.01}" onclick="trade.monto=${(max * f).toFixed(4)};pintar()">${txt}</button>`).join("")}</div>
-    <input id="m-${t}" type="number" inputmode="decimal" min="1" value="${Math.floor(m)}" onchange="trade.monto=Math.min(${max.toFixed(4)},Math.max(1,+this.value||1));pintar()">
-    <button class="volver ancho" style="margin-top:12px;background:${verbo === "comprar" ? "var(--verde)" : "var(--rojo)"}" onclick="ejecutarTrade()">Confirmar: ${verbo} ${usd(m)}</button>
-    <button class="chip ancho" style="margin-top:8px" onclick="trade=null;pintar()">Cancelar</button></div>`;
+
+/* ---------- gráfico de velas ---------- */
+let VELA_ACTUAL = [];
+function velasSVG(bars, intervalo) {
+  const chico = window.innerWidth < 600, fs = chico ? 13 : 15;
+  const maxN = chico ? 40 : 80; bars = bars.slice(-maxN); VELA_ACTUAL = bars;
+  const W = chico ? 400 : 760, H = chico ? 250 : 300, L = chico ? 58 : 70, R = 10, T = 12, B = 28, n = bars.length;
+  let lo = Math.min(...bars.map(b => b[3])), hi = Math.max(...bars.map(b => b[2]));
+  if (hi === lo) { hi += 1; lo -= 1; } const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const paso = (W - L - R) / n, bw = Math.max(2, paso * 0.62);
+  const X = i => L + paso * (i + 0.5), Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  let g = "";
+  const crudo = (hi - lo) / 4, p10 = 10 ** Math.floor(Math.log10(crudo));
+  const st = [1, 2, 2.5, 5, 10].map(m => m * p10).find(v => v >= crudo);
+  const dec = st < 1 ? 2 : 0;
+  for (let t = Math.ceil(lo / st) * st; t <= hi; t += st) {
+    g += `<line x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" stroke="#E8E4DB"/>`;
+    g += `<text x="${L - 6}" y="${Y(t) + 5}" text-anchor="end" font-size="${fs}" fill="#5B6573">${t.toFixed(dec)}</text>`;
+  }
+  const etiqueta = s => { const [f, h] = s.split(" "); const [a, m, d] = f.split("-");
+    if (intervalo === "1wk") return `${MESES[+m - 1]} ${a.slice(2)}`;
+    if (!h) return `${+d} ${MESES[+m - 1]}`;
+    let [hh, mi] = h.split(":").map(Number); return `${hh % 12 || 12}:${String(mi).padStart(2, "0")}`; };
+  const cada = Math.ceil(n / (chico ? 4 : 6));
+  bars.forEach((b, i) => {
+    const [, o, h, l, c] = b, sube = c >= o, col = sube ? "#1A9A55" : "#D64535";
+    if ((intervalo === "15m" || intervalo === "1h") && i > 0 && b[0].slice(0, 10) !== bars[i - 1][0].slice(0, 10)) {
+      const xd = L + paso * i, [, mm, dd] = b[0].slice(0, 10).split("-");
+      g += `<line x1="${xd}" x2="${xd}" y1="${T}" y2="${H - B}" stroke="#9C7A45" stroke-dasharray="3 4"/>`;
+      g += `<text x="${xd + 4}" y="${T + fs}" font-size="${fs}" fill="#9C7A45" font-weight="700">${+dd} ${MESES[+mm - 1]}</text>`;
+    }
+    const y1 = Y(Math.max(o, c)), alto = Math.max(1.5, Math.abs(Y(o) - Y(c)));
+    g += `<g onclick="infoVela(${i})" style="cursor:pointer"><rect x="${X(i) - paso / 2}" y="${T}" width="${paso}" height="${H - T - B}" fill="transparent"/>
+      <line x1="${X(i)}" x2="${X(i)}" y1="${Y(h)}" y2="${Y(l)}" stroke="${col}" stroke-width="1.5"/>
+      <rect x="${X(i) - bw / 2}" y="${y1}" width="${bw}" height="${alto}" fill="${col}" rx="1"/></g>`;
+    if ((n - 1 - i) % cada === 0) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="${fs}" fill="#5B6573">${etiqueta(b[0])}</text>`;
+  });
+  const ult = bars[n - 1][4];
+  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ult)}" y2="${Y(ult)}" stroke="#1F3A5F" stroke-dasharray="4 4"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfico de velas">${g}</svg>`;
+}
+function infoVela(i) {
+  const b = VELA_ACTUAL[i]; if (!b) return;
+  const [, o, h, l, c] = b, cambio = c / o - 1;
+  document.getElementById("infovela").innerHTML =
+    `<b>${cuandoTxt(b[0]).replace("cierre del ", "")}</b>: empezó en ${usd(o, 2)} y terminó en ${usd(c, 2)} ` +
+    `<b class="${clase(cambio)}" style="background:none">(${pct(cambio, 2)})</b>. Lo más alto: ${usd(h, 2)} · lo más bajo: ${usd(l, 2)}.`;
+}
+
+/* ---------- textos de ayuda ---------- */
+const AYUDA_VELAS = `<details><summary>¿Cómo leo las velas?</summary>
+  <p>Cada "vela" es un pedazo de tiempo (15 minutos, una hora, un día o una semana, según el botón que elijas).</p>
+  <p><b style="color:#1A9A55">Vela verde:</b> en ese rato el precio <b>subió</b>.<br><b style="color:#D64535">Vela roja:</b> en ese rato el precio <b>bajó</b>.</p>
+  <p>La parte gruesa va desde el precio con que empezó hasta el precio con que terminó. La rayita fina muestra lo más alto y lo más bajo que llegó.</p>
+  <p>La línea punteada azul es el precio de ahora. Las líneas doradas marcan dónde empieza un nuevo día. <b>Toca cualquier vela</b> para ver sus números.</p></details>`;
+
+function pantallaBienvenida(noGuarda) {
+  return `${barra()}
+  <h1>Mi simulador</h1><p class="sub">Un juego para practicar a invertir, con precios de verdad</p>${noGuarda}
+  <div class="tarjeta"><h3>¿Qué es esto?</h3>
+    <p>Es como un juego. <b>Te damos dinero de mentira</b> y tú decides en qué ponerlo. Los precios son los <b>reales</b> de la bolsa de Nueva York, así que verás si habrías ganado o perdido. <b>Nadie pierde dinero de verdad.</b></p></div>
+  <div class="tarjeta"><h3>Cómo se juega, paso a paso</h3>
+    <div class="pasos">
+      <div><span>1</span><p><b>Eliges con cuánto empezar.</b> Ese dinero queda como "efectivo": está guardado y no sube ni baja.</p></div>
+      <div><span>2</span><p><b>Miras el precio de un fondo</b> en el gráfico de velas: ¿viene subiendo o bajando?</p></div>
+      <div><span>3</span><p><b>Tocas «Comprar»</b> y pones parte de tu efectivo en ese fondo. Desde ese momento tu dinero sube y baja junto con el precio.</p></div>
+      <div><span>4</span><p><b>Tocas «Vender»</b> cuando quieras sacar el dinero. Vuelve a tu efectivo, con lo que ganaste o perdiste.</p></div>
+    </div></div>
+  <div class="aviso oro"><b>Un ejemplo con números</b><br>
+    Tienes US$ 100. Compras "Acciones de EE. UU." por US$ 100.<br>
+    • Si el precio <b class="sube" style="background:none">sube 3%</b>, tus US$ 100 ahora valen <b>US$ 103</b>.<br>
+    • Si el precio <b class="baja" style="background:none">baja 3%</b>, valen <b>US$ 97</b>.<br>
+    Cuando vendes, esos US$ 103 (o US$ 97) vuelven a tu efectivo.</div>
+  <div class="tarjeta"><label class="campo" style="margin-top:0" for="montoini">¿Con cuánto quieres empezar?</label>
+    <div class="chips" style="margin-bottom:10px">${[100, 200, 500].map(v => `<button class="chip" aria-pressed="${simInicial === v}" onclick="simInicial=${v};pintar()">${usd(v)}</button>`).join("")}</div>
+    <p class="chica" style="margin:4px 0 6px">O escribe otro monto (en dólares):</p>
+    <input id="montoini" type="number" inputmode="decimal" min="1" value="${simInicial}" onchange="simInicial=Math.max(1,+this.value||1);pintar()">
+    <button class="volver ancho" style="margin-top:16px;background:var(--verde)" onclick="abrirCuenta()">Empezar con ${usd(simInicial)}</button></div>
+  ${traerCuenta(false)}${pie()}`;
+}
+function traerCuenta(conCodigo) {
+  return `<details><summary>${conCodigo ? "Usar mi cuenta en otro celular o computadora" : "¿Ya empezaste a jugar en otro celular o computadora?"}</summary>
+    <p>Tu juego se guarda <b>solo en el aparato donde lo usas</b>. Si empiezas en el celular y luego abres la app en la computadora, ahí aparecerá vacío.</p>
+    <p>Para llevar tu juego de un aparato a otro: en el aparato <b>donde ya jugaste</b>, entra a esta misma sección y toca «Copiar código». Luego, en el aparato <b>nuevo</b>, pega ese código abajo y toca «Traer mi juego».</p>
+    <p class="chica">Si cada persona de la familia juega en su propio celular, no necesitan esto: cada uno tiene su propio juego.</p>
+    ${conCodigo ? `<textarea id="codigo" rows="3" readonly style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px">${codigoCuenta()}</textarea>
+    <button class="chip ancho" style="margin:10px 0 18px" onclick="copiarCodigo()">Copiar código</button>` : ""}
+    <p class="chica">Pega aquí el código que copiaste en el otro aparato:</p>
+    <textarea id="pegar" rows="3" style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px"></textarea>
+    <button class="chip ancho" style="margin:10px 0 18px" onclick="recuperar()">Traer mi juego</button></details>`;
 }
 function codigoCuenta() { return btoa(unescape(encodeURIComponent(JSON.stringify(cuenta())))); }
 function copiarCodigo() {
   const txt = codigoCuenta();
   (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
-    () => alert("Código copiado. Pégalo en el otro celular o computadora, en «Recuperar mi cuenta»."),
-    () => { const a = document.getElementById("codigo"); a.select(); alert("Selecciona el texto del recuadro y cópialo."); });
+    () => alert("Código copiado. Ahora ábrelo en el otro aparato y pégalo en «Traer mi juego»."),
+    () => { document.getElementById("codigo").select(); alert("Mantén presionado el texto del recuadro y elige «Copiar»."); });
 }
 function recuperar() {
   const txt = (document.getElementById("pegar").value || "").trim();
   try {
     const c = JSON.parse(decodeURIComponent(escape(atob(txt))));
     if (typeof c.efectivo !== "number" || typeof c.pos !== "object" || !Array.isArray(c.ops)) throw 0;
-    if (cuenta() && !confirm("Esto reemplaza la cuenta que tienes en este aparato. ¿Continuar?")) return;
+    if (cuenta() && !confirm("Esto reemplaza el juego que tienes en este aparato. ¿Continuar?")) return;
     c.costo = c.costo || {}; c.historial = c.historial || []; guardar(c);
-    simMsg = "Cuenta recuperada."; pintar(true);
-  } catch (e) { alert("Ese código no es válido. Revisa que lo hayas copiado completo."); }
+    simMsg = "Listo: trajiste tu juego a este aparato."; pintar(true);
+  } catch (e) { alert("Ese código no funciona. Revisa que lo hayas copiado completo."); }
+}
+
+function panelTrade(c) {
+  const t = trade.t, max = maxTrade(c, t, trade.tipo), compra = trade.tipo === "comprar";
+  if (max < 0.5) return `<div class="aviso" style="margin-bottom:0">${compra
+    ? "No te queda efectivo para comprar. Primero vende algo (botón rojo) para tener efectivo."
+    : "Todavía no tienes dinero puesto en este fondo, así que no hay nada que vender."}</div>`;
+  const m = Math.min(trade.monto == null ? max / 2 : trade.monto, max);
+  const opciones = [[0.25, "Un cuarto"], [0.5, "La mitad"], [1, compra ? "Todo mi efectivo" : "Todo"]];
+  return `<div class="tarjeta" style="border:3px solid ${compra ? "var(--verde)" : "var(--rojo)"}">
+    <h3>${compra ? "Comprar" : "Vender"}: ${ACT[t]}</h3>
+    <p>${compra ? `¿Cuánto de tu efectivo quieres poner aquí? Tienes <b>${usd(max, 2)}</b> disponibles.`
+                : `¿Cuánto quieres sacar de aquí? Tienes <b>${usd(max, 2)}</b> en este fondo.`}</p>
+    <div class="chips" style="margin-bottom:10px">${opciones.map(([f, txt]) =>
+      `<button class="chip" aria-pressed="${Math.abs(m - max * f) < 0.005}" onclick="trade.monto=${(max * f).toFixed(4)};pintar()">${txt} (${usd(max * f, 2)})</button>`).join("")}</div>
+    <p class="chica" style="margin:4px 0 6px">O escribe el monto en dólares:</p>
+    <input type="number" inputmode="decimal" min="0.5" step="0.01" value="${m.toFixed(2)}" onchange="trade.monto=Math.min(${max.toFixed(4)},Math.max(0.5,+this.value||0.5));pintar()">
+    <button class="volver ancho" style="margin-top:14px;background:${compra ? "var(--verde)" : "var(--rojo)"}" onclick="ejecutarTrade()">Sí, ${compra ? "comprar" : "vender"} ${usd(m, 2)}</button>
+    <button class="chip ancho" style="margin-top:8px" onclick="trade=null;pintar()">No, cancelar</button>
+    <p class="chica" style="margin:10px 0 0">Se usa el último precio (${usd(ultimo(t).precio, 2)}) y se cobra una pequeña comisión de 0.10%, como en la vida real${m >= 10 ? ` (unos ${usd(m * COSTO_OP, 2)})` : ""}.</p></div>`;
 }
 
 function simulador() {
   const c = cuenta();
-  const noGuarda = almacenOK ? "" : '<div class="aviso oro"><b>Ojo:</b> este navegador no deja guardar datos. Lo que hagas se perderá al cerrar. Ábrela en Chrome normal (no en modo incógnito).</div>';
+  const noGuarda = almacenOK ? "" : '<div class="aviso oro"><b>Ojo:</b> este navegador no deja guardar. Lo que hagas se perderá al cerrar. Ábrelo en Chrome normal (no en modo incógnito).</div>';
   const msg = simMsg ? `<div class="aviso" style="border-color:var(--verde);background:var(--verde-f)"><b>${esc(simMsg)}</b></div>` : "";
   simMsg = "";
-  if (!c) return `${barra()}
-    <h1>Mi simulador</h1><p class="sub">Invierte dinero de práctica con precios reales</p>${noGuarda}
-    <div class="tarjeta"><h3>¿Cómo funciona?</h3><ol style="margin:8px 0 0;padding-left:24px">
-      <li>Recibes dinero de práctica. <b>No es real.</b></li>
-      <li>Puedes <b>copiar lo que hace un robot</b>, o comprar y vender tú mismo.</li>
-      <li>Cada día hábil los precios reales de la bolsa mueven tu dinero y ves si ganas o pierdes.</li></ol></div>
-    <div class="tarjeta"><label class="campo" style="margin-top:0">¿Con cuánto quieres empezar?</label>
-      <div class="chips">${[1000, 5000, 10000, 50000].map(v => `<button class="chip" aria-pressed="${simInicial === v}" onclick="simInicial=${v};pintar()">${usd(v)}</button>`).join("")}</div>
-      <button class="volver ancho" style="margin-top:18px;background:var(--verde)" onclick="abrirCuenta()">Empezar con ${usd(simInicial)}</button></div>
-    <div class="tarjeta"><h3>¿Ya tienes una cuenta en otro aparato?</h3>
-      <p class="chica">Pega aquí el código que copiaste desde el otro celular o computadora.</p>
-      <textarea id="pegar" rows="3" style="width:100%;font-size:15px;border:2px solid var(--borde);border-radius:12px;padding:10px"></textarea>
-      <button class="chip ancho" style="margin-top:10px" onclick="recuperar()">Recuperar mi cuenta</button></div>${pie()}`;
+  if (!c) return pantallaBienvenida(noGuarda);
 
   anotarValor(c); guardar(c);
-  const p = precios(), total = valorCuenta(c), gan = total - c.inicial;
-  const R = D.robots.robots;
-  // ¿el robot que sigue cambió de idea?
+  const p = precios(), total = valorCuenta(c), gan = total - c.inicial, invertido = total - c.efectivo;
+  const R = D.robots.robots, t = simFondo, u = ultimo(t), abierta = bolsaAbierta();
+
+  // aviso si el robot copiado cambió de idea
   let cambio = "";
   if (c.sigue != null && R[c.sigue]) {
     const w = pesosCuenta(c), wr = R[c.sigue].pesos || {};
-    if (ORDEN.some(t => Math.abs((w[t] || 0) - (wr[t] || 0)) > 0.05))
-      cambio = `<div class="aviso oro"><b>El robot "${esc(R[c.sigue].nombre)}" cambió de idea.</b><br>Ahora tiene: ${esc(tiene(wr))}.
+    if (ORDEN.some(k => Math.abs((w[k] || 0) - (wr[k] || 0)) > 0.05))
+      cambio = `<div class="aviso oro"><b>El robot «${esc(R[c.sigue].nombre)}» cambió de idea.</b><br>Ahora tiene: ${esc(tiene(wr))}.
         <button class="volver ancho" style="margin-top:10px;background:var(--dorado)" onclick="copiarRobot(${c.sigue})">Volver a copiarlo</button></div>`;
   }
-  const grafica = c.historial.length >= 2
-    ? `<div class="tarjeta"><h3>Así ha ido mi dinero</h3>${grafico([{valores: c.historial.map(h => h[1]), color: "#1F3A5F", grueso: true}],
-        {alto: 220, base: c.inicial, etiquetasX: [[0, fecha(c.historial[0][0])], [c.historial.length - 1, fecha(c.historial[c.historial.length - 1][0])]]})}
-        <p class="chica">La línea punteada es lo que pusiste al inicio. Se anota un punto cada día que abres el simulador.</p></div>` : "";
-  const items = ORDEN.filter(t => (c.pos[t] || 0) * p[t] >= 0.5).map(t => {
-    const v = c.pos[t] * p[t], g = v - (c.costo[t] || 0);
-    return `<li><div class="fila" style="justify-content:space-between"><b>${ACT[t]}</b><b style="font-size:22px">${usd(v)}</b></div>
-      <div class="chica">${g >= 0 ? "Vas ganando" : "Vas perdiendo"} <b class="${clase(g)}" style="background:none">${usd(Math.abs(g))}</b> en este fondo</div></li>`;
-  });
-  items.push(`<li><div class="fila" style="justify-content:space-between"><b>Efectivo (sin invertir)</b><b style="font-size:22px">${usd(c.efectivo)}</b></div></li>`);
-  const rb = R[simRobot];
-  const fondos = ORDEN.map(t => {
-    const a = D.mercado.activos.find(x => x.ticker === t), tieneT = (c.pos[t] || 0) * p[t] >= 0.5;
-    return `<div class="tarjeta"><h3>${ACT[t]}</h3>
-      <div class="fila"><span class="grande" style="font-size:26px">${usd(a.precio, 2)}</span><span class="pill ${clase(a.dia)}">${flecha(a.dia)} ${pct(a.dia)} hoy</span></div>
-      <div class="grid2" style="grid-template-columns:1fr 1fr;margin-top:12px">
-        <button class="chip" style="background:var(--verde);border-color:var(--verde);color:#fff" onclick="abrirTrade('${t}','comprar')">Comprar</button>
-        <button class="chip" style="background:var(--rojo);border-color:var(--rojo);color:#fff" ${tieneT ? "" : "disabled"} onclick="abrirTrade('${t}','vender')">Vender</button></div>
-      ${trade && trade.t === t ? panelTrade(c, t) : ""}</div>`;
+
+  // gráfico de velas
+  const serie = VELAS && VELAS[t] && VELAS[t][simIntervalo];
+  let grafVelas, variacion = "";
+  if (serie && serie.length > 1) {
+    grafVelas = velasSVG(serie, simIntervalo);
+    const vis = serie.slice(-(window.innerWidth < 600 ? 40 : 80)), cv = vis[vis.length - 1][4] / vis[0][1] - 1;
+    variacion = `<p class="chica" style="margin:6px 0 0">En lo que muestra el gráfico, el precio ${cv > 0.0005 ? "subió" : cv < -0.0005 ? "bajó" : "casi no cambió"} <b class="${clase(cv)}" style="background:none">${pct(cv, 2)}</b>.</p>`;
+  } else {
+    grafVelas = `<p class="aviso">Las velas aparecerán apenas se descarguen los precios de la bolsa (se actualizan cada hora mientras está abierta). Mientras tanto puedes comprar y vender con el precio de cierre.</p>`;
+  }
+
+  const misFondos = ORDEN.filter(k => (c.pos[k] || 0) * p[k] >= 0.01).map(k => {
+    const v = c.pos[k] * p[k], puse = c.costo[k] || 0, g = v - puse;
+    return `<li><b>${ACT[k]}</b><br>Pusiste ${usd(puse, 2)} → hoy vale <b>${usd(v, 2)}</b><br>
+      <span class="${clase(g)}" style="background:none;font-weight:700">${g >= 0 ? "Vas ganando" : "Vas perdiendo"} ${usd(Math.abs(g), 2)}</span></li>`;
   }).join("");
-  const ops = c.ops.slice(0, 20).map(o => `<li><span class="chica">${fecha(o.f)}</span><br>
-    <b class="${o.a === "compró" ? "sube" : "baja"}" style="background:none">${o.a === "compró" ? "Compraste" : "Vendiste"}</b> ${esc(ACT[o.t])} por ${usd(o.m)}</li>`).join("") || "<li>Todavía no has hecho operaciones.</li>";
+  const rb = R[simRobot];
+  const ops = c.ops.slice(0, 20).map(o => `<li><span class="chica">${cuandoTxt(o.f)}</span><br>
+    <b class="${o.a === "compró" ? "sube" : "baja"}" style="background:none">${o.a === "compró" ? "Compraste" : "Vendiste"}</b> ${esc(ACT[o.t])} por ${usd(o.m, 2)}${o.p ? ` <span class="chica">(precio ${usd(o.p, 2)})</span>` : ""}</li>`).join("")
+    || "<li>Todavía no has comprado ni vendido nada.</li>";
 
   return `${barra()}
-  <h1>Mi simulador</h1><p class="sub">Dinero de práctica · precios reales del cierre del ${fecha(D.fecha_precios)}</p>${noGuarda}${msg}
-  <div class="banner"><span class="chica">Mi dinero de práctica hoy</span>
-    <b style="font-size:40px;margin:4px 0">${usd(total)}</b>
-    <span>${gan >= 0 ? "Ganancia" : "Pérdida"}: <b>${gan >= 0 ? "+" : "−"}${usd(Math.abs(gan))} (${pct(gan / c.inicial)})</b> desde el ${fecha(c.inicio)}</span>
-    ${c.sigue != null && R[c.sigue] ? `<span class="chica" style="display:block;margin-top:6px">Estás copiando a: ${esc(R[c.sigue].nombre)}</span>` : ""}</div>
-  ${cambio}${grafica}
-  <h2>Lo que tengo</h2><div class="tarjeta"><ul class="lista">${items.join("")}</ul></div>
+  <h1>Mi simulador</h1><p class="sub">Dinero de mentira · precios de verdad</p>${noGuarda}${msg}${cambio}
 
-  <h2>1. Copiar a un robot</h2>
-  <p>Elige un robot y tu dinero quedará repartido igual que el suyo.</p>
+  <div class="banner"><span class="chica">Todo mi dinero de práctica vale hoy</span>
+    <b style="font-size:40px;margin:4px 0">${usd(total, 2)}</b>
+    <span>Empecé con ${usd(c.inicial, 2)} → ${gan >= 0 ? "voy ganando" : "voy perdiendo"} <b>${usd(Math.abs(gan), 2)} (${pct(gan / c.inicial)})</b></span></div>
+  <div class="grid2" style="grid-template-columns:1fr 1fr">
+    <div class="tarjeta" style="margin:0"><span class="chica">💵 Efectivo<br>(guardado, no se mueve)</span><div class="grande" style="font-size:26px">${usd(c.efectivo, 2)}</div></div>
+    <div class="tarjeta" style="margin:0"><span class="chica">📦 Invertido<br>(sube y baja con el precio)</span><div class="grande" style="font-size:26px">${usd(invertido, 2)}</div></div>
+  </div>
+
+  <h2>Paso 1 · Elige un fondo</h2>
+  <div class="chips">${ORDEN.map(k => `<button class="chip" aria-pressed="${t === k}" onclick="simFondo='${k}';trade=null;pintar()">${CORTO[k]}</button>`).join("")}</div>
+  <p class="chica" style="margin-top:8px">${QUE_ES[t]}</p>
+
+  <h2>Paso 2 · Mira cómo se mueve el precio</h2>
+  <div class="tarjeta">
+    <span class="chica">Precio de ${ACT[t]}</span>
+    <div class="grande">${usd(u.precio, 2)}</div>
+    <p class="chica" style="margin:2px 0 10px">Último precio: ${cuandoTxt(u.cuando)}</p>
+    <div class="chips" style="margin-bottom:8px">${INTERVALOS.map(([k, txt]) => `<button class="chip" style="min-height:44px;padding:6px 14px;font-size:16px" aria-pressed="${simIntervalo === k}" onclick="simIntervalo='${k}';pintar()">${txt}</button>`).join("")}</div>
+    ${grafVelas}${variacion}
+    <p id="infovela" class="chica" style="min-height:22px;margin:8px 0 0">Toca una vela para ver sus números.</p>
+    ${AYUDA_VELAS}
+    <p class="chica" style="margin:8px 0 0">${abierta ? "🟢 La bolsa está <b>abierta</b> ahora." : "🔴 La bolsa está <b>cerrada</b> ahora."}
+      Abre de lunes a viernes ${horarioLima()} (hora de Lima). Los precios de esta app se actualizan <b>cada hora</b> mientras está abierta.</p>
+  </div>
+
+  <h2>Paso 3 · Compra o vende</h2>
+  <div class="grid2" style="grid-template-columns:1fr 1fr">
+    <button class="boton" style="justify-content:center;text-align:center;background:var(--verde);border-color:var(--verde);color:#fff;min-height:84px" onclick="abrirTrade('comprar')"><span><b style="color:#fff;font-size:24px">Comprar</b><span style="color:#E3F2E8">poner efectivo aquí</span></span></button>
+    <button class="boton" style="justify-content:center;text-align:center;background:var(--rojo);border-color:var(--rojo);color:#fff;min-height:84px" onclick="abrirTrade('vender')"><span><b style="color:#fff;font-size:24px">Vender</b><span style="color:#FBE6E3">sacar dinero de aquí</span></span></button>
+  </div>
+  ${trade && trade.t === t ? panelTrade(c) : ""}
+
+  <h2>Lo que tengo invertido</h2>
+  <div class="tarjeta"><ul class="lista">${misFondos || "<li>Todavía no tienes nada invertido. Todo está en efectivo.</li>"}</ul></div>
+
+  <h2>¿No sabes qué hacer? Copia a un robot</h2>
+  <p>Si prefieres no decidir tú, elige un robot y tu dinero quedará repartido igual que el suyo.</p>
   <div class="chips">${R.map((r, i) => `<button class="chip" aria-pressed="${simRobot === i}" onclick="simRobot=${i};pintar()">${esc(r.nombre)}</button>`).join("")}</div>
   <div class="tarjeta"><h3>${esc(rb.nombre)}</h3><p class="chica">${esc(rb.corta)}</p>
     <p><b>Hoy tiene:</b> ${esc(tiene(rb.pesos))}</p>
-    <button class="volver ancho" onclick="copiarRobot(${simRobot})">Hacer lo mismo con mi dinero</button>
-    <p class="chica" style="margin:10px 0 0">Los robots cambian de idea de vez en cuando (la mayoría, a fin de mes). Si eso pasa, aquí te aparecerá un aviso para volver a copiarlo.</p></div>
+    <button class="volver ancho" onclick="copiarRobot(${simRobot})">Repartir mi dinero igual que este robot</button></div>
 
-  <h2>2. O decidir yo mismo</h2>
-  <p>Compra o vende cualquiera de los 4 fondos. Se usa el precio de cierre más reciente y se cobra un pequeño costo de 0.10%, como en la vida real.</p>
-  <div class="grid2">${fondos}</div>
-
-  <h2>Mis operaciones</h2><div class="tarjeta"><ul class="lista">${ops}</ul></div>
-
-  <details><summary>Pasar mi cuenta a otro celular o computadora</summary>
-    <p>Tu cuenta se guarda solo en este aparato. Para usarla en otro, copia este código y pégalo allá, en «Mi simulador».</p>
-    <textarea id="codigo" rows="3" readonly style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px">${codigoCuenta()}</textarea>
-    <button class="chip ancho" style="margin:10px 0 16px" onclick="copiarCodigo()">Copiar código</button>
-    <p class="chica">¿Traes un código de otro aparato? Pégalo aquí:</p>
-    <textarea id="pegar" rows="3" style="width:100%;font-size:13px;border:2px solid var(--borde);border-radius:12px;padding:10px"></textarea>
-    <button class="chip ancho" style="margin:10px 0 16px" onclick="recuperar()">Recuperar mi cuenta</button></details>
-  <button class="chip ancho" style="margin-top:20px;color:var(--rojo);border-color:#F2BDB6" onclick="reiniciar()">Empezar de nuevo (borrar mi cuenta)</button>
+  <h2>Lo que he hecho</h2><div class="tarjeta"><ul class="lista">${ops}</ul></div>
+  ${traerCuenta(true)}
+  <button class="chip ancho" style="margin-top:20px;color:var(--rojo);border-color:#F2BDB6" onclick="reiniciar()">Empezar de nuevo (borrar mi juego)</button>
   ${pie()}`;
 }
 
@@ -585,8 +732,9 @@ function ayuda() {
   ${q("¿Cada cuánto debemos mirarla?", "<p>Una vez por semana es suficiente. Los robots casi no hacen operaciones: la mayoría decide una sola vez al mes.</p>")}
   ${q("¿Cuándo podremos sacar conclusiones?", "<p>No antes de 3 meses, idealmente a los 6. Con pocas semanas, que un robot gane o pierda es casi pura suerte.</p>")}
   ${q("¿Entonces debemos invertir con un robot?", "<p>Todavía no. En la historia de 20 años, desde 2018 ningún robot le ganó a «Sin hacer nada». La práctica sirve justamente para comprobar con calma si alguno vale la pena antes de arriesgar dinero real. Cualquier decisión se conversa en familia, y no es una recomendación de inversión.</p>")}
-  ${q("¿Cómo uso «Mi simulador»?", "<p>Es tu propia cuenta de práctica. Eliges con cuánto empezar y luego puedes <b>copiar a un robot</b> (tu dinero queda repartido igual que el suyo) o <b>comprar y vender tú mismo</b>. Los precios son los reales del último cierre de la bolsa. Si el robot que copias cambia de idea, aparece un aviso para volver a copiarlo.</p>")}
-  ${q("¿Mi simulador se ve en otro celular?", "<p>No automáticamente: cada celular o computadora guarda su propia cuenta. Para pasarla, en «Mi simulador» abre <b>«Pasar mi cuenta a otro celular o computadora»</b>, copia el código y pégalo en el otro aparato.</p>")}
+  ${q("¿Cómo uso «Mi simulador»?", "<p>Es un juego con dinero de mentira y precios de verdad.</p><p><b>1.</b> Eliges con cuánto empezar (por ejemplo US$ 100). Ese dinero queda en <b>efectivo</b>: guardado, no sube ni baja.</p><p><b>2.</b> Eliges un fondo y miras su gráfico de velas.</p><p><b>3.</b> Tocas <b>Comprar</b> para poner parte de tu efectivo en ese fondo. Desde ahí tu dinero sube o baja junto con el precio.</p><p><b>4.</b> Tocas <b>Vender</b> para sacar el dinero. Vuelve a tu efectivo con lo que ganaste o perdiste.</p><p>Si no quieres decidir, puedes copiar a un robot.</p>")}
+  ${q("¿Qué son las velas del gráfico?", "<p>Cada vela es un pedazo de tiempo: 15 minutos, una hora, un día o una semana. <b>Verde</b> = en ese rato el precio subió. <b>Roja</b> = bajó. La rayita fina marca lo más alto y lo más bajo. Los precios se actualizan cada hora mientras la bolsa está abierta.</p>")}
+  ${q("¿Mi juego se ve en otro celular?", "<p>No: cada celular o computadora guarda su propio juego. Así cada persona de la familia puede tener el suyo. Si quieres llevar <b>tu</b> juego a otro aparato, en «Mi simulador» abre «Usar mi cuenta en otro celular o computadora», copia el código y pégalo en el otro aparato.</p>")}
   ${q("¿Cómo la instalo en el celular?", "<p>En Android: abre esta página en <b>Chrome</b>, toca los tres puntos ⋮ arriba a la derecha y elige <b>«Agregar a la pantalla principal»</b> o <b>«Instalar app»</b>. Aparecerá un ícono como cualquier otra app.</p>")}
   ${pie()}`;
 }
