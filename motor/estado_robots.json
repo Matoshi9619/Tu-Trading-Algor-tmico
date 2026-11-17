@@ -1,6 +1,6 @@
 {
  "inicio": "2026-10-07",
- "ultima": "2026-11-13",
+ "ultima": "2026-11-16",
  "historial": [
   {
    "fecha": "2026-10-07",
@@ -235,6 +235,15 @@
    "3. Filtro de tendencia": 9696.31,
    "4. Rotación por momentum": 9769.28,
    "5. Rebote de corto plazo RSI": 10099.02
+  },
+  {
+   "fecha": "2026-11-16",
+   "0. Comprar y mantener SPY": 9510.96,
+   "1. Cartera 60/40": 9752.89,
+   "2. Cruce de medias 50/200": 9510.96,
+   "3. Filtro de tendencia": 9510.96,
+   "4. Rotación por momentum": 9625.79,
+   "5. Rebote de corto plazo RSI": 10088.93
   }
  ],
  "operaciones": [
@@ -321,6 +330,13 @@
    "activo": "SPY",
    "accion": "vendió",
    "monto": 10109.13
+  },
+  {
+   "fecha": "2026-11-16",
+   "robot": "5. Rebote de corto plazo RSI",
+   "activo": "SPY",
+   "accion": "compró",
+   "monto": 10088.93
   }
  ],
  "carteras": {
@@ -356,8 +372,10 @@
    }
   },
   "5. Rebote de corto plazo RSI": {
-   "efectivo": 10099.019558624488,
-   "pos": {}
+   "efectivo": 0.0,
+   "pos": {
+    "SPY": 13.634611070421474
+   }
   }
  }
 }
