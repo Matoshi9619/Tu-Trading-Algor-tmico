@@ -1,6 +1,6 @@
 {
  "inicio": "2026-10-07",
- "ultima": "2026-11-18",
+ "ultima": "2026-11-19",
  "historial": [
   {
    "fecha": "2026-10-07",
@@ -262,6 +262,15 @@
    "3. Filtro de tendencia": 9385.64,
    "4. Rotación por momentum": 9402.59,
    "5. Rebote de corto plazo RSI": 9955.99
+  },
+  {
+   "fecha": "2026-11-19",
+   "0. Comprar y mantener SPY": 9201.45,
+   "1. Cartera 60/40": 9592.97,
+   "2. Cruce de medias 50/200": 9201.45,
+   "3. Filtro de tendencia": 9201.45,
+   "4. Rotación por momentum": 9263.79,
+   "5. Rebote de corto plazo RSI": 9760.61
   }
  ],
  "operaciones": [
